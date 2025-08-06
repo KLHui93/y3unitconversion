@@ -138,6 +138,23 @@
             transform: translateY(0);
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         }
+        .btn-tertiary { /* New button style for "Back to Main" */
+            background-color: #fca5a5; /* Light red */
+            color: #b91c1c; /* Darker red text */
+            border: none;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+        }
+        .btn-tertiary:hover {
+            background-color: #ef4444; /* Red */
+            color: #ffffff;
+            transform: translateY(-1px);
+            box-shadow: 0 8px 10px rgba(0, 0, 0, 0.2);
+        }
+        .btn-tertiary:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
 
         .feedback-message {
             font-size: 1.5rem; /* Larger text */
@@ -221,7 +238,11 @@
             <p class="text-xl text-gray-600 mb-6">
                 通过练习米和厘米的换算、加法和减法，提升你的数学技能！
             </p>
-            <button id="start-game-btn" class="btn btn-primary">开始游戏</button>
+            <div class="flex flex-col gap-4">
+                <button id="start-easy-btn" class="btn btn-primary">简单模式 (换算)</button>
+                <button id="start-medium-btn" class="btn btn-primary">中等模式 (加法/减法)</button>
+                <button id="start-hard-btn" class="btn btn-primary">困难模式 (连加/连减)</button>
+            </div>
         </div>
 
         <!-- Game Screen -->
@@ -246,6 +267,7 @@
                 <button id="check-btn" class="btn btn-primary">检查答案</button>
                 <button id="next-btn" class="btn btn-secondary" style="display: none;">下一题</button>
             </div>
+            <button id="back-to-main-game-btn" class="btn btn-tertiary mt-4">返回主页</button>
 
             <p class="feedback-message" id="feedback"></p>
         </div>
@@ -254,339 +276,456 @@
         <div id="game-over-screen" class="game-over-screen">
             <h2 class="title">游戏结束！</h2>
             <p>你的最终分数是: <span id="final-score">0</span></p>
-            <button id="restart-game-btn" class="btn btn-primary">再玩一次</button>
+            <div class="flex justify-center gap-4 mt-4">
+                <button id="restart-game-btn" class="btn btn-primary">再玩一次</button>
+                <button id="back-to-main-over-btn" class="btn btn-tertiary">返回主页</button>
+            </div>
         </div>
     </div>
 
     <script>
-        // Game State
-        let score = 0;
-        let currentQuestion = {};
-        let questionType = 0; // 0: Conversion, 1: Addition, 2: Subtraction
-        let questionsAttempted = 0;
-        const totalQuestions = 10; // Total questions per game
-        const timePerQuestion = 60; // seconds per question (Changed to 60)
-        let timeLeft = timePerQuestion;
-        let timerInterval;
+        document.addEventListener('DOMContentLoaded', () => {
+            // Game State
+            let score = 0;
+            let currentQuestion = {};
+            let questionsAttempted = 0;
+            const totalQuestions = 10; // Total questions per game
+            let timePerQuestion = 60; // Default time, will be set by difficulty
+            let timeLeft = timePerQuestion;
+            let timerInterval;
+            let currentDifficulty = 'medium'; // 'easy', 'medium', 'hard'
 
-        // DOM Elements
-        const appContainer = document.querySelector('.app-container');
-        const startScreen = document.getElementById('start-screen');
-        const gameScreen = document.getElementById('game-screen');
-        const gameOverScreen = document.getElementById('game-over-screen');
+            // DOM Elements
+            const appContainer = document.querySelector('.app-container');
+            const startScreen = document.getElementById('start-screen');
+            const gameScreen = document.getElementById('game-screen');
+            const gameOverScreen = document.getElementById('game-over-screen');
 
-        const scoreDisplay = document.getElementById('score');
-        const questionsAttemptedDisplay = document.getElementById('questions-attempted');
-        const totalQuestionsDisplay = document.getElementById('total-questions');
-        const questionText = document.getElementById('question');
-        const answerInputsDiv = document.getElementById('answer-inputs');
-        const checkBtn = document.getElementById('check-btn');
-        const nextBtn = document.getElementById('next-btn');
-        const feedbackMessage = document.getElementById('feedback');
-        const finalScoreDisplay = document.getElementById('final-score');
-        const timerBar = document.getElementById('timer-bar');
+            const scoreDisplay = document.getElementById('score');
+            const questionsAttemptedDisplay = document.getElementById('questions-attempted');
+            const totalQuestionsDisplay = document.getElementById('total-questions');
+            const questionText = document.getElementById('question');
+            const answerInputsDiv = document.getElementById('answer-inputs');
+            const checkBtn = document.getElementById('check-btn');
+            const nextBtn = document.getElementById('next-btn');
+            const feedbackMessage = document.getElementById('feedback');
+            const finalScoreDisplay = document.getElementById('final-score');
+            const timerBar = document.getElementById('timer-bar');
 
-        // Sound Effects (using Tone.js)
-        const correctSound = new Tone.MembraneSynth().toDestination();
-        const incorrectSound = new Tone.NoiseSynth({
-            noise: { type: 'pink' },
-            envelope: { attack: 0.005, decay: 0.1, sustain: 0.05, release: 0.1 }
-        }).toDestination();
-        const timerTickSound = new Tone.PolySynth(Tone.Synth, {
-            oscillator: { type: 'sine' },
-            envelope: { attack: 0.001, decay: 0.05, sustain: 0.01, release: 0.05 }
-        }).toDestination();
+            // New "Back to Main" buttons
+            const backToMainGameBtn = document.getElementById('back-to-main-game-btn');
+            const backToMainOverBtn = document.getElementById('back-to-main-over-btn');
 
 
-        /**
-         * 将米转换为厘米
-         * @param {number} m - 米数
-         * @returns {number} 厘米数
-         */
-        function mToCm(m) {
-            return m * 100;
-        }
+            // Sound Effects (using Tone.js)
+            const correctSound = new Tone.MembraneSynth().toDestination();
+            const incorrectSound = new Tone.NoiseSynth({
+                noise: { type: 'pink' },
+                envelope: { attack: 0.005, decay: 0.1, sustain: 0.05, release: 0.1 }
+            }).toDestination();
+            const timerTickSound = new Tone.PolySynth(Tone.Synth, {
+                oscillator: { type: 'sine' },
+                envelope: { attack: 0.001, decay: 0.05, sustain: 0.01, release: 0.05 }
+            }).toDestination();
 
-        /**
-         * 将厘米转换为米和剩余厘米
-         * @param {number} cm - 厘米数
-         * @returns {{m: number, cm: number}} 包含米和厘米的对象
-         */
-        function cmToMAndCm(cm) {
-            const m = Math.floor(cm / 100);
-            const remainingCm = cm % 100;
-            return { m, cm: remainingCm };
-        }
+            /**
+             * Helper to format a length part (e.g., "5米30厘米", "5米", "30厘米")
+             * If both m and cm are 0, it returns an empty string.
+             * @param {number} m - 米数
+             * @param {number} cm - 厘米数
+             * @returns {string} 格式化后的长度字符串
+             */
+            function formatLength(m, cm) {
+                let part = "";
+                if (m > 0) {
+                    part += `${m}米`;
+                }
+                if (cm > 0) {
+                    part += `${cm}厘米`;
+                }
+                // If both are zero, return an empty string. This is crucial for not displaying "0米0厘米"
+                return part;
+            }
 
-        /**
-         * 生成一个随机整数（包含最小值和最大值）
-         * @param {number} min - 最小值
-         * @param {number} max - 最大值
-         * @returns {number} 随机整数
-         */
-        function getRandomInt(min, max) {
-            return Math.floor(Math.random() * (max - min + 1)) + min;
-        }
+            /**
+             * 开始游戏
+             * @param {string} difficulty - 难度级别 ('easy', 'medium', 'hard')
+             */
+            function startGame(difficulty) {
+                currentDifficulty = difficulty; // Set the chosen difficulty
 
-        /**
-         * 生成长度单位换算问题
-         */
-        function generateConversionQuestion() {
-            const type = getRandomInt(0, 1); // 0: m to cm, 1: cm to m & cm
+                // Set time per question based on difficulty
+                if (difficulty === 'easy') {
+                    timePerQuestion = 30;
+                } else if (difficulty === 'medium') {
+                    timePerQuestion = 60;
+                } else { // hard
+                    timePerQuestion = 90;
+                }
 
-            if (type === 0) { // 米到厘米
-                const meters = getRandomInt(1, 10);
-                const correctCm = mToCm(meters);
-                questionText.textContent = `${meters}米 = `;
-                answerInputsDiv.innerHTML = `
-                    <input type="number" id="answer1" placeholder="" class="flex-grow"> <span>厘米</span>
-                `;
-                currentQuestion = {
-                    type: 'conversion-m-cm',
-                    correctAnswer: { cm: correctCm }
-                };
-            } else { // 厘米到米和厘米
-                const totalCm = getRandomInt(100, 1000); // 1米到10米之间
-                const { m, cm } = cmToMAndCm(totalCm);
-                questionText.textContent = `${totalCm}厘米 = `;
+                startScreen.classList.remove('active');
+                gameScreen.classList.add('active');
+                score = 0;
+                questionsAttempted = 0;
+                scoreDisplay.textContent = score;
+                totalQuestionsDisplay.textContent = totalQuestions;
+                newQuestion();
+            }
+
+            /**
+             * 游戏结束
+             */
+            function gameOver() {
+                stopTimer(); // Ensure timer stops on game over
+                gameScreen.classList.remove('active');
+                gameOverScreen.classList.add('active');
+                finalScoreDisplay.textContent = score;
+            }
+
+            /**
+             * 重置游戏 (Restart with the same difficulty)
+             */
+            function resetGame() {
+                gameOverScreen.classList.remove('active');
+                startGame(currentDifficulty); // Restart with the same difficulty
+            }
+
+            /**
+             * 返回主页面 (Go back to difficulty selection screen)
+             */
+            function backToStartScreen() {
+                stopTimer(); // Stop timer if returning from game screen
+                gameScreen.classList.remove('active');
+                gameOverScreen.classList.remove('active');
+                startScreen.classList.add('active');
+                // Reset game state when going back to main screen
+                score = 0;
+                questionsAttempted = 0;
+            }
+
+            /**
+             * 将米转换为厘米
+             * @param {number} m - 米数
+             * @returns {number} 厘米数
+             */
+            function mToCm(m) {
+                return m * 100;
+            }
+
+            /**
+             * 将厘米转换为米和剩余厘米
+             * @param {number} cm - 厘米数
+             * @returns {{m: number, cm: number}} 包含米和厘米的对象
+             */
+            function cmToMAndCm(cm) {
+                const m = Math.floor(cm / 100);
+                const remainingCm = cm % 100;
+                return { m, cm: remainingCm };
+            }
+
+            /**
+             * 生成一个随机整数（包含最小值和最大值）
+             * @param {number} min - 最小值
+             * @param {number} max - 最大值
+             * @returns {number} 随机整数
+             */
+            function getRandomInt(min, max) {
+                return Math.floor(Math.random() * (max - min + 1)) + min;
+            }
+
+            /**
+             * 生成长度单位换算问题
+             * @param {string} difficulty - 难度级别 ('easy', 'medium', 'hard')
+             */
+            function generateConversionQuestion(difficulty) {
+                const type = getRandomInt(0, 1); // 0: m to cm, 1: cm to m & cm
+                let metersRange, totalCmRange;
+
+                if (difficulty === 'easy') { // Easy mode only uses conversion
+                    metersRange = { min: 1, max: 10 };
+                    totalCmRange = { min: 100, max: 1000 };
+                } else {
+                    // This function should ideally only be called in 'easy' mode now.
+                    // Fallback to medium ranges if called incorrectly.
+                    metersRange = { min: 1, max: 15 };
+                    totalCmRange = { min: 100, max: 1500 };
+                }
+
+                if (type === 0) { // 米到厘米
+                    const meters = getRandomInt(metersRange.min, metersRange.max);
+                    const correctCm = mToCm(meters);
+                    questionText.textContent = `${meters}米 = `;
+                    answerInputsDiv.innerHTML = `
+                        <input type="number" id="answer1" placeholder="" class="flex-grow"> <span>厘米</span>
+                    `;
+                    currentQuestion = {
+                        type: 'conversion-m-cm',
+                        correctAnswer: { cm: correctCm }
+                    };
+                } else { // 厘米到米和厘米
+                    let totalCm = getRandomInt(totalCmRange.min, totalCmRange.max);
+                    const { m, cm } = cmToMAndCm(totalCm);
+                    questionText.textContent = `${totalCm}厘米 = `;
+                    answerInputsDiv.innerHTML = `
+                        <input type="number" id="answer1" placeholder="" class="flex-grow"> <span>米</span>
+                        <input type="number" id="answer2" placeholder="" class="flex-grow"> <span>厘米</span>
+                    `;
+                    currentQuestion = {
+                        type: 'conversion-cm-m-cm',
+                        correctAnswer: { m: m, cm: cm }
+                    };
+                }
+            }
+
+            /**
+             * 生成长度加法问题
+             * @param {string} difficulty - 难度级别 ('easy', 'medium', 'hard')
+             */
+            function generateAdditionQuestion(difficulty) {
+                const numTerms = getRandomInt(2, 3); // 2或3个加数
+                let totalM = 0;
+                let totalCm = 0;
+                let questionParts = [];
+
+                let mRange, cmRange;
+                if (difficulty === 'easy') { // Easy mode should not call this
+                    mRange = { min: 0, max: 3 };
+                    cmRange = { min: 0, max: 50 };
+                } else if (difficulty === 'medium') {
+                    mRange = { min: 0, max: 10 };
+                    cmRange = { min: 0, max: 99 };
+                } else { // hard
+                    mRange = { min: 0, max: 20 };
+                    cmRange = { min: 0, max: 99 };
+                }
+
+                for (let i = 0; i < numTerms; i++) {
+                    const m = getRandomInt(mRange.min, mRange.max);
+                    const cm = getRandomInt(cmRange.min, cmRange.max);
+                    totalM += m;
+                    totalCm += cm;
+                    const formattedPart = formatLength(m, cm);
+                    if (formattedPart) { // Only add if not empty (i.e., not 0m 0cm)
+                        questionParts.push(formattedPart);
+                    }
+                }
+
+                const { m: finalM, cm: finalCm } = cmToMAndCm(totalCm);
+                totalM += finalM;
+
+                questionText.textContent = questionParts.join(' + ') + ' = ';
                 answerInputsDiv.innerHTML = `
                     <input type="number" id="answer1" placeholder="" class="flex-grow"> <span>米</span>
                     <input type="number" id="answer2" placeholder="" class="flex-grow"> <span>厘米</span>
                 `;
                 currentQuestion = {
-                    type: 'conversion-cm-m-cm',
-                    correctAnswer: { m: m, cm: cm }
+                    type: 'addition',
+                    correctAnswer: { m: totalM, cm: finalCm }
                 };
             }
-        }
 
-        /**
-         * 生成长度加法问题
-         */
-        function generateAdditionQuestion() {
-            const numTerms = getRandomInt(2, 3); // 2或3个加数
-            let totalM = 0;
-            let totalCm = 0;
-            let questionParts = [];
+            /**
+             * 生成长度减法问题
+             * @param {string} difficulty - 难度级别 ('easy', 'medium', 'hard')
+             */
+            function generateSubtractionQuestion(difficulty) {
+                let m1, cm1, m2, cm2;
+                let totalCm1, totalCm2;
 
-            for (let i = 0; i < numTerms; i++) {
-                const m = getRandomInt(0, 5);
-                const cm = getRandomInt(0, 99);
-                totalM += m;
-                totalCm += cm;
-                questionParts.push(`${m}米${cm}厘米`);
+                let m1Range, cm1Range, m2Range, cm2Range;
+                if (difficulty === 'easy') { // Easy mode should not call this
+                    m1Range = { min: 3, max: 10 };
+                    cm1Range = { min: 50, max: 99 };
+                    m2Range = { min: 1, max: 5 };
+                    cm2Range = { min: 0, max: 49 };
+                } else if (difficulty === 'medium') {
+                    m1Range = { min: 5, max: 20 };
+                    cm1Range = { min: 0, max: 99 };
+                    m2Range = { min: 1, max: 15 };
+                    cm2Range = { min: 0, max: 99 };
+                } else { // hard
+                    m1Range = { min: 10, max: 50 };
+                    cm1Range = { min: 0, max: 99 };
+                    m2Range = { min: 1, max: 40 };
+                    cm2Range = { min: 0, max: 99 };
+                }
+
+                // Ensure first number is greater than second number
+                do {
+                    m1 = getRandomInt(m1Range.min, m1Range.max);
+                    cm1 = getRandomInt(cm1Range.min, cm1Range.max);
+                    m2 = getRandomInt(m2Range.min, m2Range.max);
+                    cm2 = getRandomInt(cm2Range.min, cm2Range.max);
+
+                    totalCm1 = mToCm(m1) + cm1;
+                    totalCm2 = mToCm(m2) + cm2;
+                } while (totalCm1 <= totalCm2);
+
+                const differenceCm = totalCm1 - totalCm2;
+                const { m: finalM, cm: finalCm } = cmToMAndCm(differenceCm);
+
+                const formattedPart1 = formatLength(m1, cm1);
+                const formattedPart2 = formatLength(m2, cm2);
+
+                questionText.textContent = `${formattedPart1} - ${formattedPart2} = `;
+                answerInputsDiv.innerHTML = `
+                    <input type="number" id="answer1" placeholder="" class="flex-grow"> <span>米</span>
+                    <input type="number" id="answer2" placeholder="" class="flex-grow"> <span>厘米</span>
+                `;
+                currentQuestion = {
+                    type: 'subtraction',
+                    correctAnswer: { m: finalM, cm: finalCm }
+                };
             }
 
-            const { m: finalM, cm: finalCm } = cmToMAndCm(totalCm);
-            totalM += finalM;
+            /**
+             * 检查用户答案
+             * @param {boolean} [timedOut=false] - 是否因为超时而调用
+             */
+            function checkAnswer(timedOut = false) {
+                stopTimer(); // Stop the timer as soon as answer is checked or timed out
 
-            questionText.textContent = questionParts.join(' + ') + ' = ';
-            answerInputsDiv.innerHTML = `
-                <input type="number" id="answer1" placeholder="" class="flex-grow"> <span>米</span>
-                <input type="number" id="answer2" placeholder="" class="flex-grow"> <span>厘米</span>
-            `;
-            currentQuestion = {
-                type: 'addition',
-                correctAnswer: { m: totalM, cm: finalCm }
-            };
-        }
+                feedbackMessage.textContent = '';
+                feedbackMessage.classList.remove('feedback-correct', 'feedback-incorrect', 'animate-feedback');
 
-        /**
-         * 生成长度减法问题
-         */
-        function generateSubtractionQuestion() {
-            let m1, cm1, m2, cm2;
-            let totalCm1, totalCm2;
+                let isCorrect = false;
+                let userAnswerM, userAnswerCm;
 
-            // 确保第一个数大于第二个数
-            do {
-                m1 = getRandomInt(3, 10);
-                cm1 = getRandomInt(0, 99);
-                m2 = getRandomInt(1, m1); // m2不能大于m1
-                cm2 = getRandomInt(0, 99);
-
-                totalCm1 = mToCm(m1) + cm1;
-                totalCm2 = mToCm(m2) + cm2;
-            } while (totalCm1 <= totalCm2); // 确保被减数大于减数
-
-            const differenceCm = totalCm1 - totalCm2;
-            const { m: finalM, cm: finalCm } = cmToMAndCm(differenceCm);
-
-            questionText.textContent = `${m1}米${cm1}厘米 - ${m2}米${cm2}厘米 = `;
-            answerInputsDiv.innerHTML = `
-                <input type="number" id="answer1" placeholder="" class="flex-grow"> <span>米</span>
-                <input type="number" id="answer2" placeholder="" class="flex-grow"> <span>厘米</span>
-            `;
-            currentQuestion = {
-                type: 'subtraction',
-                correctAnswer: { m: finalM, cm: finalCm }
-            };
-        }
-
-        /**
-         * 检查用户答案
-         * @param {boolean} [timedOut=false] - 是否因为超时而调用
-         */
-        function checkAnswer(timedOut = false) {
-            stopTimer(); // Stop the timer as soon as answer is checked or timed out
-
-            feedbackMessage.textContent = '';
-            feedbackMessage.classList.remove('feedback-correct', 'feedback-incorrect', 'animate-feedback');
-
-            let isCorrect = false;
-            let userAnswerM, userAnswerCm;
-
-            if (currentQuestion.type === 'conversion-m-cm') {
-                userAnswerCm = parseInt(document.getElementById('answer1').value);
-                if (!isNaN(userAnswerCm) && userAnswerCm === currentQuestion.correctAnswer.cm) {
-                    isCorrect = true;
-                }
-            } else if (currentQuestion.type === 'conversion-cm-m-cm' || currentQuestion.type === 'addition' || currentQuestion.type === 'subtraction') {
-                userAnswerM = parseInt(document.getElementById('answer1').value);
-                userAnswerCm = parseInt(document.getElementById('answer2').value);
-
-                if (!isNaN(userAnswerM) && !isNaN(userAnswerCm) &&
-                    userAnswerM === currentQuestion.correctAnswer.m &&
-                    userAnswerCm === currentQuestion.correctAnswer.cm) {
-                    isCorrect = true;
-                }
-            }
-
-            if (timedOut) {
-                feedbackMessage.textContent = `时间到！`;
-                feedbackMessage.classList.add('feedback-incorrect', 'animate-feedback');
-                incorrectSound.triggerAttackRelease('8n');
-            } else if (isCorrect) {
-                feedbackMessage.textContent = '正确！🎉';
-                feedbackMessage.classList.add('feedback-correct', 'animate-feedback');
-                score += 10; // Add 10 points for correct answer
-                correctSound.triggerAttackRelease('C5', '8n');
-            } else {
-                let correctDisplay = '';
                 if (currentQuestion.type === 'conversion-m-cm') {
-                    correctDisplay = `${currentQuestion.correctAnswer.cm}厘米`;
+                    userAnswerCm = parseInt(document.getElementById('answer1').value);
+                    if (!isNaN(userAnswerCm) && userAnswerCm === currentQuestion.correctAnswer.cm) {
+                        isCorrect = true;
+                    }
+                } else if (currentQuestion.type === 'conversion-cm-m-cm' || currentQuestion.type === 'addition' || currentQuestion.type === 'subtraction') {
+                    userAnswerM = parseInt(document.getElementById('answer1').value);
+                    userAnswerCm = parseInt(document.getElementById('answer2').value);
+
+                    if (!isNaN(userAnswerM) && !isNaN(userAnswerCm) &&
+                        userAnswerM === currentQuestion.correctAnswer.m &&
+                        userAnswerCm === currentQuestion.correctAnswer.cm) {
+                        isCorrect = true;
+                    }
+                }
+
+                if (timedOut) {
+                    feedbackMessage.textContent = `时间到！`;
+                    feedbackMessage.classList.add('feedback-incorrect', 'animate-feedback');
+                    incorrectSound.triggerAttackRelease('8n');
+                } else if (isCorrect) {
+                    feedbackMessage.textContent = '正确！🎉';
+                    feedbackMessage.classList.add('feedback-correct', 'animate-feedback');
+                    score += 10; // Add 10 points for correct answer
+                    correctSound.triggerAttackRelease('C5', '8n');
                 } else {
-                    correctDisplay = `${currentQuestion.correctAnswer.m}米 ${currentQuestion.correctAnswer.cm}厘米`;
+                    let correctDisplay = '';
+                    if (currentQuestion.type === 'conversion-m-cm') {
+                        correctDisplay = `${currentQuestion.correctAnswer.cm}厘米`;
+                    } else {
+                        correctDisplay = `${currentQuestion.correctAnswer.m}米 ${currentQuestion.correctAnswer.cm}厘米`;
+                    }
+                    feedbackMessage.textContent = `错误！正确答案是 ${correctDisplay}。`;
+                    feedbackMessage.classList.add('feedback-incorrect', 'animate-feedback');
+                    incorrectSound.triggerAttackRelease('8n');
                 }
-                feedbackMessage.textContent = `错误！正确答案是 ${correctDisplay}。`;
-                feedbackMessage.classList.add('feedback-incorrect', 'animate-feedback');
-                incorrectSound.triggerAttackRelease('8n');
+
+                scoreDisplay.textContent = score;
+                checkBtn.style.display = 'none';
+                nextBtn.style.display = 'block';
             }
 
-            scoreDisplay.textContent = score;
-            checkBtn.style.display = 'none';
-            nextBtn.style.display = 'block';
-        }
+            /**
+             * 开始计时器
+             */
+            function startTimer() {
+                timeLeft = timePerQuestion;
+                timerBar.style.width = '100%';
+                timerBar.style.backgroundColor = '#f59e0b'; // Amber
 
-        /**
-         * 开始计时器
-         */
-        function startTimer() {
-            timeLeft = timePerQuestion;
-            timerBar.style.width = '100%';
-            timerBar.style.backgroundColor = '#f59e0b'; // Amber
+                clearInterval(timerInterval);
+                timerInterval = setInterval(() => {
+                    timeLeft--;
+                    const percentage = (timeLeft / timePerQuestion) * 100;
+                    timerBar.style.width = `${percentage}%`;
 
-            clearInterval(timerInterval);
-            timerInterval = setInterval(() => {
-                timeLeft--;
-                const percentage = (timeLeft / timePerQuestion) * 100;
-                timerBar.style.width = `${percentage}%`;
+                    if (timeLeft <= 5 && timeLeft > 0) { // Flash red when time is low
+                        timerBar.style.backgroundColor = '#ef4444'; // Red
+                        timerTickSound.triggerAttackRelease('C4', '16n'); // Play a tick sound
+                    } else if (timeLeft <= 0) {
+                        clearInterval(timerInterval);
+                        checkAnswer(true); // Mark as incorrect due to timeout
+                    }
+                }, 1000);
+            }
 
-                if (timeLeft <= 5 && timeLeft > 0) { // Flash red when time is low
-                    timerBar.style.backgroundColor = '#ef4444'; // Red
-                    timerTickSound.triggerAttackRelease('C4', '16n'); // Play a tick sound
-                } else if (timeLeft <= 0) {
-                    clearInterval(timerInterval);
-                    checkAnswer(true); // Mark as incorrect due to timeout
+            /**
+             * 停止计时器
+             */
+            function stopTimer() {
+                clearInterval(timerInterval);
+            }
+
+            /**
+             * 生成新的问题
+             */
+            function newQuestion() {
+                questionsAttempted++;
+                if (questionsAttempted > totalQuestions) {
+                    gameOver();
+                    return;
                 }
-            }, 1000);
-        }
 
-        /**
-         * 停止计时器
-         */
-        function stopTimer() {
-            clearInterval(timerInterval);
-        }
+                feedbackMessage.textContent = '';
+                feedbackMessage.classList.remove('feedback-correct', 'feedback-incorrect', 'animate-feedback');
+                checkBtn.style.display = 'block';
+                nextBtn.style.display = 'none';
+                answerInputsDiv.innerHTML = ''; // Clear previous inputs
 
-        /**
-         * 生成新的问题
-         */
-        function newQuestion() {
-            questionsAttempted++;
-            if (questionsAttempted > totalQuestions) {
-                gameOver();
-                return;
+                questionsAttemptedDisplay.textContent = questionsAttempted;
+
+                // Select question type based on difficulty
+                if (currentDifficulty === 'easy') {
+                    generateConversionQuestion(currentDifficulty);
+                } else if (currentDifficulty === 'medium') {
+                    // Medium: Addition or Subtraction
+                    const type = getRandomInt(0, 1); // 0 for addition, 1 for subtraction
+                    if (type === 0) {
+                        generateAdditionQuestion(currentDifficulty);
+                    } else {
+                        generateSubtractionQuestion(currentDifficulty);
+                    }
+                } else { // hard: Mixed Addition and Subtraction (continuous)
+                    const type = getRandomInt(0, 1); // 0 for addition, 1 for subtraction
+                    if (type === 0) {
+                        generateAdditionQuestion(currentDifficulty);
+                    } else {
+                        generateSubtractionQuestion(currentDifficulty);
+                    }
+                }
+
+                // Start timer for the new question
+                startTimer();
+
+                // Focus on the first input field if available
+                const firstInput = document.getElementById('answer1');
+                if (firstInput) {
+                    firstInput.focus();
+                }
             }
 
-            feedbackMessage.textContent = '';
-            feedbackMessage.classList.remove('feedback-correct', 'feedback-incorrect', 'animate-feedback');
-            checkBtn.style.display = 'block';
-            nextBtn.style.display = 'none';
-            answerInputsDiv.innerHTML = ''; // Clear previous inputs
+            // Event Listeners
+            document.getElementById('start-easy-btn').addEventListener('click', () => startGame('easy'));
+            document.getElementById('start-medium-btn').addEventListener('click', () => startGame('medium'));
+            document.getElementById('start-hard-btn').addEventListener('click', () => startGame('hard'));
+            checkBtn.addEventListener('click', () => checkAnswer(false)); // Pass false, not timed out
+            nextBtn.addEventListener('click', newQuestion);
+            document.getElementById('restart-game-btn').addEventListener('click', resetGame);
 
-            questionsAttemptedDisplay.textContent = questionsAttempted;
+            // New "Back to Main" button event listeners
+            backToMainGameBtn.addEventListener('click', backToStartScreen);
+            backToMainOverBtn.addEventListener('click', backToStartScreen);
 
-            // Randomly select question type
-            questionType = getRandomInt(0, 2); // 0: Conversion, 1: Addition, 2: Subtraction
 
-            if (questionType === 0) {
-                generateConversionQuestion();
-            } else if (questionType === 1) {
-                generateAdditionQuestion();
-            } else {
-                generateSubtractionQuestion();
-            }
-
-            // Start timer for the new question
-            startTimer();
-
-            // Focus on the first input field if available
-            const firstInput = document.getElementById('answer1');
-            if (firstInput) {
-                firstInput.focus();
-            }
-        }
-
-        /**
-         * 开始游戏
-         */
-        function startGame() {
-            startScreen.classList.remove('active');
-            gameScreen.classList.add('active');
-            score = 0;
-            questionsAttempted = 0;
-            scoreDisplay.textContent = score;
-            totalQuestionsDisplay.textContent = totalQuestions;
-            newQuestion();
-        }
-
-        /**
-         * 游戏结束
-         */
-        function gameOver() {
-            stopTimer(); // Ensure timer stops on game over
-            gameScreen.classList.remove('active');
-            gameOverScreen.classList.add('active');
-            finalScoreDisplay.textContent = score;
-        }
-
-        /**
-         * 重置游戏
-         */
-        function resetGame() {
-            gameOverScreen.classList.remove('active');
-            startGame();
-        }
-
-        // Event Listeners
-        document.getElementById('start-game-btn').addEventListener('click', startGame);
-        checkBtn.addEventListener('click', () => checkAnswer(false)); // Pass false, not timed out
-        nextBtn.addEventListener('click', newQuestion);
-        document.getElementById('restart-game-btn').addEventListener('click', resetGame);
-
-        // Initial game setup: Ensure only start screen is active initially
-        document.addEventListener('DOMContentLoaded', () => {
+            // Initial game setup: Ensure only start screen is active initially
             startScreen.classList.add('active');
             gameScreen.classList.remove('active');
             gameOverScreen.classList.remove('active');

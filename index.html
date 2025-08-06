@@ -3,1564 +3,594 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>单位换算大挑战</title>
+    <title>长度单位换算挑战</title>
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#3B82F6',
-                        secondary: '#10B981',
-                        accent: '#F59E0B',
-                        danger: '#EF4444',
-                        dark: '#1F2937',
-                        light: '#F3F4F6'
-                    },
-                    fontFamily: {
-                        game: ['"Comic Sans MS"', '"Marker Felt"', 'Arial Rounded MT Bold', 'sans-serif']
-                    }
-                }
-            }
+    <!-- Tone.js for sound effects -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
+    <style>
+        body {
+            font-family: "Inter", sans-serif;
+            background: linear-gradient(135deg, #a7f3d0 0%, #6ee7b7 100%); /* Vibrant gradient background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            overflow: hidden; /* Prevent scrollbar from background effects */
         }
-    </script>
-    <style type="text/tailwindcss">
-        @layer utilities {
-            .content-auto {
-                content-visibility: auto;
-            }
-            .card-flip {
-                transform-style: preserve-3d;
-                transition: transform 0.6s;
-            }
-            .card-flip.flipped {
-                transform: rotateY(180deg);
-            }
-            .card-front, .card-back {
-                backface-visibility: hidden;
-            }
-            .card-back {
-                transform: rotateY(180deg);
-            }
-            .bounce-in {
-                animation: bounceIn 0.5s ease-out;
-            }
-            .float {
-                animation: float 3s ease-in-out infinite;
-            }
-            .pulse {
-                animation: pulse 1s infinite;
-            }
-            .scale-in {
-                animation: scaleIn 0.3s ease-out;
-            }
-            .correct-animation {
-                animation: correctPulse 0.5s ease-out;
-            }
-            .wrong-animation {
-                animation: wrongShake 0.5s ease-out;
-            }
-            @keyframes bounceIn {
-                0% { transform: scale(0.3); opacity: 0; }
-                50% { transform: scale(1.05); }
-                70% { transform: scale(0.9); }
-                100% { transform: scale(1); opacity: 1; }
-            }
-            @keyframes float {
-                0% { transform: translateY(0px); }
-                50% { transform: translateY(-10px); }
-                100% { transform: translateY(0px); }
-            }
-            @keyframes pulse {
-                0% { transform: scale(1); }
-                50% { transform: scale(1.05); }
-                100% { transform: scale(1); }
-            }
-            @keyframes scaleIn {
-                0% { transform: scale(0); opacity: 0; }
-                100% { transform: scale(1); opacity: 1; }
-            }
-            @keyframes correctPulse {
-                0% { transform: scale(1); }
-                50% { transform: scale(1.1); box-shadow: 0 0 15px rgba(16, 185, 129, 0.5); }
-                100% { transform: scale(1); }
-            }
-            @keyframes wrongShake {
-                0%, 100% { transform: translateX(0); }
-                20%, 60% { transform: translateX(-5px); }
-                40%, 80% { transform: translateX(5px); }
-            }
+        .app-container {
+            position: relative;
+            background-color: #ffffff;
+            border-radius: 1.5rem; /* rounded-3xl */
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); /* shadow-2xl */
+            padding: 2.5rem; /* p-10 */
+            max-width: 750px; /* Wider to accommodate horizontal layout */
+            width: 100%;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem; /* gap-6 */
+            transition: all 0.5s ease-in-out;
+        }
+
+        /* Screens */
+        .game-screen, .start-screen, .game-over-screen {
+            display: none; /* Hidden by default, managed by JS */
+            flex-direction: column;
+            gap: 1.5rem;
+            align-items: center;
+            justify-content: center;
+        }
+        .start-screen.active, .game-screen.active, .game-over-screen.active {
+            display: flex;
+        }
+
+        /* Horizontal Question and Input Area */
+        .question-interaction-area {
+            display: flex;
+            flex-wrap: wrap; /* Allow wrapping on smaller screens */
+            align-items: center;
+            justify-content: center;
+            gap: 1rem; /* Space between question and inputs */
+            min-height: 4rem; /* Ensure consistent height */
+        }
+
+        .question-text {
+            font-size: 2.25rem; /* text-4xl */
+            font-weight: 600; /* font-semibold */
+            color: #374151; /* text-gray-700 */
+            line-height: 1.3;
+            flex-shrink: 0; /* Prevent shrinking */
+        }
+
+        .input-group {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem; /* Increased gap */
+            flex-wrap: wrap; /* Allow wrapping on smaller screens */
+            flex-grow: 1; /* Allow input group to take available space */
+            min-width: 200px; /* Minimum width for inputs */
+        }
+        .input-group input {
+            padding: 0.75rem 0.5rem; /* Vertical padding, less horizontal */
+            border: none; /* No full border */
+            border-bottom: 3px solid #6ee7b7; /* Green bottom border as a "line" */
+            background-color: transparent; /* Transparent background */
+            border-radius: 0; /* No border radius for line effect */
+            font-size: 1.5rem; /* Larger text */
+            font-weight: 500;
+            color: #1f2937;
+            width: 90px; /* Specific width for input */
+            text-align: center;
+            transition: all 0.3s ease-in-out;
+        }
+        .input-group input:focus {
+            outline: none;
+            border-color: #059669; /* Darker green on focus */
+            box-shadow: 0 2px 0 0 #059669; /* Subtle shadow for depth */
+        }
+        .input-group span {
+            font-size: 1.5rem; /* Unit text size */
+            color: #4b5563;
+            font-weight: 500;
+        }
+
+        .btn {
+            padding: 0.85rem 2rem; /* More padding */
+            border-radius: 0.75rem; /* rounded-xl */
+            font-size: 1.25rem; /* text-xl */
+            font-weight: 700; /* font-bold */
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2); /* Deeper shadow */
+            letter-spacing: 0.05em; /* Slight letter spacing */
+            text-transform: uppercase;
+        }
+        .btn-primary {
+            background: linear-gradient(45deg, #3b82f6, #2563eb); /* Blue gradient */
+            color: #ffffff; /* text-white */
+            border: none;
+        }
+        .btn-primary:hover {
+            background: linear-gradient(45deg, #2563eb, #1d4ed8); /* Darker blue gradient */
+            transform: translateY(-2px);
+            box-shadow: 0 12px 20px rgba(0, 0, 0, 0.3);
+        }
+        .btn-primary:active {
+            transform: translateY(0);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .btn-secondary {
+            background: linear-gradient(45deg, #6b7280, #4b5563); /* Gray gradient */
+            color: #ffffff; /* text-white */
+            border: none;
+        }
+        .btn-secondary:hover {
+            background: linear-gradient(45deg, #4b5563, #374151); /* Darker gray gradient */
+            transform: translateY(-2px);
+            box-shadow: 0 12px 20px rgba(0, 0, 0, 0.3);
+        }
+        .btn-secondary:active {
+            transform: translateY(0);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .feedback-message {
+            font-size: 1.5rem; /* Larger text */
+            font-weight: 700; /* font-bold */
+            margin-top: 1rem; /* mt-4 */
+            min-height: 2.5rem; /* Prevent layout shift */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .feedback-correct {
+            color: #10b981; /* text-green-500 */
+        }
+        .feedback-incorrect {
+            color: #ef4444; /* text-red-500 */
+        }
+        /* Feedback animation */
+        @keyframes bounceIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            70% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); }
+        }
+        .animate-feedback {
+            animation: bounceIn 0.5s ease-out;
+        }
+
+        .score-display, .progress-display {
+            font-size: 1.35rem; /* text-xl */
+            font-weight: 600; /* font-semibold */
+            color: #374151; /* text-gray-700 */
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            padding: 0 1rem;
+        }
+        .title {
+            font-size: 2.8rem; /* text-5xl */
+            font-weight: 800; /* font-extrabold */
+            color: #1f2937; /* text-gray-900 */
+            margin-bottom: 1rem; /* mb-4 */
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        .start-screen h2, .game-over-screen h2 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #1f2937;
+            margin-bottom: 1rem;
+        }
+        .game-over-screen p {
+            font-size: 1.8rem;
+            color: #4b5563;
+            font-weight: 600;
+        }
+        .game-over-screen p span {
+            color: #059669;
+            font-size: 2rem;
+        }
+
+        /* Timer Bar */
+        .timer-bar-container {
+            width: 100%;
+            height: 15px;
+            background-color: #e0e0e0;
+            border-radius: 9999px; /* rounded-full */
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+        .timer-bar {
+            height: 100%;
+            background-color: #f59e0b; /* Amber color for timer */
+            width: 100%; /* Initial width */
+            transition: width linear; /* Smooth transition for width change */
         }
     </style>
 </head>
-<body class="bg-gradient-to-br from-blue-50 to-green-50 min-h-screen font-game text-dark">
-    <!-- 游戏容器 -->
-    <div class="container mx-auto px-4 py-6 sm:py-8 max-w-5xl">
-        <!-- 游戏标题 -->
-        <header class="text-center mb-6 sm:mb-8">
-            <h1 class="text-[clamp(1.8rem,5vw,3.2rem)] font-bold text-primary mb-2 drop-shadow-lg">
-                单位换算大挑战
-            </h1>
-            <p class="text-gray-600 text-base sm:text-lg">测试你的单位换算技能，成为换算大师！</p>
-        </header>
+<body>
+    <div class="app-container">
+        <!-- Start Screen -->
+        <div id="start-screen" class="start-screen active">
+            <h2 class="title">欢迎来到长度单位换算挑战！</h2>
+            <p class="text-xl text-gray-600 mb-6">
+                通过练习米和厘米的换算、加法和减法，提升你的数学技能！
+            </p>
+            <button id="start-game-btn" class="btn btn-primary">开始游戏</button>
+        </div>
 
-        <!-- 主游戏区域 -->
-        <main>
-            <!-- 开始界面 -->
-            <div id="start-screen" class="bounce-in">
-                <div class="bg-white rounded-2xl shadow-xl p-6 sm:p-8 mb-6">
-                    <div class="flex justify-end mb-4">
-                        <button id="view-scores-btn" class="bg-gray-100 hover:bg-gray-200 p-2 rounded-lg transition-colors flex items-center gap-2" onclick="onButtonClick(this)">
-                            <i class="fa fa-trophy text-yellow-500"></i>
-                            <span>查看记录</span>
-                        </button>
-                    </div>
-                    
-                    <div class="flex flex-col md:flex-row gap-4 sm:gap-6">
-                        <div class="flex-1 bg-blue-50 rounded-xl p-5 sm:p-6 border-2 border-primary/20 hover:border-primary transition-all duration-300 cursor-pointer" onclick="selectMode('practice'); onButtonClick(this)">
-                            <div class="text-primary text-5xl mb-4 text-center">
-                                <i class="fa fa-graduation-cap"></i>
-                            </div>
-                            <h3 class="text-xl font-bold text-center mb-2">练习模式</h3>
-                            <p class="text-center text-gray-600">轻松学习单位换算的基础知识</p>
-                            <div class="mt-2 text-center text-sm text-gray-500">
-                                <i class="fa fa-star text-yellow-400"></i>
-                                <i class="fa fa-star-o text-yellow-400"></i>
-                                <i class="fa fa-star-o text-yellow-400"></i>
-                            </div>
-                        </div>
-                        <div class="flex-1 bg-green-50 rounded-xl p-5 sm:p-6 border-2 border-secondary/20 hover:border-secondary transition-all duration-300 cursor-pointer" onclick="selectMode('challenge'); onButtonClick(this)">
-                            <div class="text-secondary text-5xl mb-4 text-center">
-                                <i class="fa fa-trophy"></i>
-                            </div>
-                            <h3 class="text-xl font-bold text-center mb-2">挑战模式</h3>
-                            <p class="text-center text-gray-600">限时答题，测试你的换算速度</p>
-                            <div class="mt-2 text-center text-sm text-gray-500">
-                                <i class="fa fa-star text-yellow-400"></i>
-                                <i class="fa fa-star text-yellow-400"></i>
-                                <i class="fa fa-star-o text-yellow-400"></i>
-                            </div>
-                        </div>
-                        <div class="flex-1 bg-yellow-50 rounded-xl p-5 sm:p-6 border-2 border-accent/20 hover:border-accent transition-all duration-300 cursor-pointer" onclick="selectMode('matching'); onButtonClick(this)">
-                            <div class="text-accent text-5xl mb-4 text-center">
-                                <i class="fa fa-puzzle-piece"></i>
-                            </div>
-                            <h3 class="text-xl font-bold text-center mb-2">配对模式</h3>
-                            <p class="text-center text-gray-600">找出等值的单位组合</p>
-                            <div class="mt-2 text-center text-sm text-gray-500">
-                                <i class="fa fa-star text-yellow-400"></i>
-                                <i class="fa fa-star text-yellow-400"></i>
-                                <i class="fa fa-star-o text-yellow-400"></i>
-                            </div>
-                        </div>
-                        <div class="flex-1 bg-red-50 rounded-xl p-5 sm:p-6 border-2 border-danger/20 hover:border-danger transition-all duration-300 cursor-pointer" onclick="selectMode('boss'); onButtonClick(this)">
-                            <div class="text-danger text-5xl mb-4 text-center">
-                                <i class="fa fa-bolt"></i>
-                            </div>
-                            <h3 class="text-xl font-bold text-center mb-2">终极BOSS</h3>
-                            <p class="text-center text-gray-600">混合运算，挑战最高难度</p>
-                            <div class="mt-2 text-center text-sm text-gray-500">
-                                <i class="fa fa-star text-yellow-400"></i>
-                                <i class="fa fa-star text-yellow-400"></i>
-                                <i class="fa fa-star text-yellow-400"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 单位选择 -->
-                <div class="bg-white rounded-2xl shadow-xl p-6 sm:p-8">
-                    <h2 class="text-2xl font-bold mb-6 text-center">选择单位类型</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div class="bg-blue-50 rounded-xl p-5 sm:p-6 text-center border-2 border-primary/20 hover:border-primary transition-all duration-300 cursor-pointer" onclick="selectUnit('length'); onButtonClick(this)">
-                            <div class="text-primary text-4xl mb-3">
-                                <i class="fa fa-arrows-h"></i>
-                            </div>
-                            <h3 class="font-bold">长度单位</h3>
-                            <p class="text-sm text-gray-600">米(m) ↔ 厘米(cm)</p>
-                        </div>
-                        <div class="bg-green-50 rounded-xl p-5 sm:p-6 text-center border-2 border-secondary/20 hover:border-secondary transition-all duration-300 cursor-pointer" onclick="selectUnit('mass'); onButtonClick(this)">
-                            <div class="text-secondary text-4xl mb-3">
-                                <i class="fa fa-balance-scale"></i>
-                            </div>
-                            <h3 class="font-bold">质量单位</h3>
-                            <p class="text-sm text-gray-600">公斤(kg) ↔ 克(g)</p>
-                        </div>
-                        <div class="bg-yellow-50 rounded-xl p-5 sm:p-6 text-center border-2 border-accent/20 hover:border-accent transition-all duration-300 cursor-pointer" onclick="selectUnit('volume'); onButtonClick(this)">
-                            <div class="text-accent text-4xl mb-3">
-                                <i class="fa fa-tint"></i>
-                            </div>
-                            <h3 class="font-bold">体积单位</h3>
-                            <p class="text-sm text-gray-600">升(L) ↔ 毫升(mL)</p>
-                        </div>
-                    </div>
+        <!-- Game Screen -->
+        <div id="game-screen" class="game-screen">
+            <h1 class="title">长度单位换算挑战</h1>
+            <div class="score-display">
+                <span>分数: <span id="score">0</span></span>
+                <span>问题: <span id="questions-attempted">0</span> / <span id="total-questions">10</span></span>
+            </div>
+            <div class="timer-bar-container">
+                <div id="timer-bar" class="timer-bar"></div>
+            </div>
+            
+            <div class="question-interaction-area">
+                <p class="question-text" id="question"></p>
+                <div class="input-group" id="answer-inputs">
+                    <!-- Inputs will be dynamically added here -->
                 </div>
             </div>
-
-            <!-- 分数记录界面 -->
-            <div id="scores-screen" class="hidden bg-white rounded-2xl shadow-xl p-6 sm:p-8">
-                <div class="flex justify-between items-center mb-6">
-                    <button onclick="backFromScores(); onButtonClick(this)" class="bg-gray-100 hover:bg-gray-200 p-2 rounded-full transition-colors">
-                        <i class="fa fa-arrow-left"></i>
-                    </button>
-                    <h2 class="text-2xl font-bold">分数记录</h2>
-                    <div></div> <!-- 占位元素，保持居中 -->
-                </div>
-                
-                <div class="space-y-6">
-                    <div class="bg-blue-50 rounded-xl p-6">
-                        <h3 class="text-xl font-bold text-primary mb-4 flex items-center">
-                            <i class="fa fa-graduation-cap mr-2"></i>练习模式
-                        </h3>
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div class="bg-white rounded-lg p-4">
-                                <p class="text-gray-600 text-sm">长度单位</p>
-                                <p id="practice-length-score" class="text-xl font-bold">0</p>
-                            </div>
-                            <div class="bg-white rounded-lg p-4">
-                                <p class="text-gray-600 text-sm">质量单位</p>
-                                <p id="practice-mass-score" class="text-xl font-bold">0</p>
-                            </div>
-                            <div class="bg-white rounded-lg p-4">
-                                <p class="text-gray-600 text-sm">体积单位</p>
-                                <p id="practice-volume-score" class="text-xl font-bold">0</p>
-                            </div>
-                            <div class="bg-white rounded-lg p-4">
-                                <p class="text-gray-600 text-sm">总计</p>
-                                <p id="practice-total-score" class="text-xl font-bold">0</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="bg-green-50 rounded-xl p-6">
-                        <h3 class="text-xl font-bold text-secondary mb-4 flex items-center">
-                            <i class="fa fa-trophy mr-2"></i>挑战模式
-                        </h3>
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div class="bg-white rounded-lg p-4">
-                                <p class="text-gray-600 text-sm">长度单位</p>
-                                <p id="challenge-length-score" class="text-xl font-bold">0</p>
-                            </div>
-                            <div class="bg-white rounded-lg p-4">
-                                <p class="text-gray-600 text-sm">质量单位</p>
-                                <p id="challenge-mass-score" class="text-xl font-bold">0</p>
-                            </div>
-                            <div class="bg-white rounded-lg p-4">
-                                <p class="text-gray-600 text-sm">体积单位</p>
-                                <p id="challenge-volume-score" class="text-xl font-bold">0</p>
-                            </div>
-                            <div class="bg-white rounded-lg p-4">
-                                <p class="text-gray-600 text-sm">总计</p>
-                                <p id="challenge-total-score" class="text-xl font-bold">0</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="bg-yellow-50 rounded-xl p-6">
-                        <h3 class="text-xl font-bold text-accent mb-4 flex items-center">
-                            <i class="fa fa-puzzle-piece mr-2"></i>配对模式
-                        </h3>
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div class="bg-white rounded-lg p-4">
-                                <p class="text-gray-600 text-sm">长度单位</p>
-                                <p id="matching-length-score" class="text-xl font-bold">0</p>
-                            </div>
-                            <div class="bg-white rounded-lg p-4">
-                                <p class="text-gray-600 text-sm">质量单位</p>
-                                <p id="matching-mass-score" class="text-xl font-bold">0</p>
-                            </div>
-                            <div class="bg-white rounded-lg p-4">
-                                <p class="text-gray-600 text-sm">体积单位</p>
-                                <p id="matching-volume-score" class="text-xl font-bold">0</p>
-                            </div>
-                            <div class="bg-white rounded-lg p-4">
-                                <p class="text-gray-600 text-sm">总计</p>
-                                <p id="matching-total-score" class="text-xl font-bold">0</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="bg-red-50 rounded-xl p-6">
-                        <h3 class="text-xl font-bold text-danger mb-4 flex items-center">
-                            <i class="fa fa-bolt mr-2"></i>终极BOSS
-                        </h3>
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div class="bg-white rounded-lg p-4">
-                                <p class="text-gray-600 text-sm">长度单位</p>
-                                <p id="boss-length-score" class="text-xl font-bold">0</p>
-                            </div>
-                            <div class="bg-white rounded-lg p-4">
-                                <p class="text-gray-600 text-sm">质量单位</p>
-                                <p id="boss-mass-score" class="text-xl font-bold">0</p>
-                            </div>
-                            <div class="bg-white rounded-lg p-4">
-                                <p class="text-gray-600 text-sm">体积单位</p>
-                                <p id="boss-volume-score" class="text-xl font-bold">0</p>
-                            </div>
-                            <div class="bg-white rounded-lg p-4">
-                                <p class="text-gray-600 text-sm">总计</p>
-                                <p id="boss-total-score" class="text-xl font-bold">0</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="text-center">
-                        <button onclick="resetAllScores(); onButtonClick(this)" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg transition-colors">
-                            重置所有记录
-                        </button>
-                    </div>
-                </div>
+            
+            <div class="flex justify-center gap-6 mt-4">
+                <button id="check-btn" class="btn btn-primary">检查答案</button>
+                <button id="next-btn" class="btn btn-secondary" style="display: none;">下一题</button>
             </div>
 
-            <!-- 游戏界面 -->
-            <div id="game-screen" class="hidden">
-                <!-- 游戏信息栏 -->
-                <div class="bg-white rounded-xl shadow-lg p-4 mb-6 flex flex-wrap justify-between items-center gap-4">
-                    <div class="flex items-center gap-4">
-                        <button onclick="goBack(); onButtonClick(this)" class="bg-gray-100 hover:bg-gray-200 p-2 rounded-full transition-colors">
-                            <i class="fa fa-arrow-left"></i>
-                        </button>
-                        <div>
-                            <h2 id="game-mode-title" class="font-bold text-xl"></h2>
-                            <p id="game-unit-type" class="text-gray-600"></p>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-6">
-                        <div class="text-center">
-                            <p class="text-sm text-gray-500">当前得分</p>
-                            <p id="current-score-display" class="font-bold text-2xl text-primary">0</p>
-                        </div>
-                        <div id="timer-container" class="hidden text-center">
-                            <p class="text-sm text-gray-500">剩余时间</p>
-                            <p id="timer-display" class="font-bold text-2xl text-danger">30</p>
-                        </div>
-                        <div class="text-center">
-                            <p class="text-sm text-gray-500">进度</p>
-                            <p id="progress-display" class="font-bold text-2xl text-secondary">0/10</p>
-                        </div>
-                    </div>
-                </div>
+            <p class="feedback-message" id="feedback"></p>
+        </div>
 
-                <!-- 练习模式 -->
-                <div id="practice-mode" class="hidden">
-                    <div class="bg-white rounded-2xl shadow-xl p-6 sm:p-8 mb-6">
-                        <div class="text-center mb-6 sm:mb-8">
-                            <p class="text-xl sm:text-2xl mb-4" id="practice-question">3米 = ____ 厘米</p>
-                            <div class="flex flex-col sm:flex-row justify-center gap-4 sm:gap-6 my-6 items-center">
-                                <!-- 单一输入区域 -->
-                                <div class="flex items-center w-full sm:w-auto">
-                                    <input type="number" id="practice-answer" class="border-2 border-gray-300 rounded-lg px-4 py-3 text-lg w-full sm:w-56 focus:outline-none focus:border-primary" placeholder="输入答案">
-                                    <span id="practice-unit" class="text-xl sm:text-2xl ml-2">厘米</span>
-                                </div>
-                                
-                                <!-- 双单位输入区域 - 左右排列 -->
-                                <div id="practice-answer-double" class="hidden flex gap-4 items-center w-full justify-center">
-                                    <div class="flex items-center">
-                                        <input type="number" class="border-2 border-gray-300 rounded-lg px-4 py-3 text-lg w-32 focus:outline-none focus:border-primary" id="practice-answer-large" placeholder="输入">
-                                        <span id="practice-unit-large" class="text-xl ml-2">米</span>
-                                    </div>
-                                    <span class="text-gray-500">和</span>
-                                    <div class="flex items-center">
-                                        <input type="number" class="border-2 border-gray-300 rounded-lg px-4 py-3 text-lg w-32 focus:outline-none focus:border-primary" id="practice-answer-small" placeholder="输入">
-                                        <span id="practice-unit-small" class="text-xl ml-2">厘米</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <button onclick="checkPracticeAnswer(); onButtonClick(this)" class="bg-primary hover:bg-primary/90 text-white font-bold py-3 px-8 rounded-lg transition-colors">
-                                检查答案
-                            </button>
-                        </div>
-                        <div id="practice-feedback" class="hidden text-center p-4 rounded-lg mb-4"></div>
-                    </div>
-                    
-                    <div class="bg-gray-50 rounded-xl p-6">
-                        <h3 class="font-bold text-lg mb-3">换算提示</h3>
-                        <ul class="list-disc list-inside text-gray-700 space-y-2" id="conversion-tips">
-                            <li>1米 = 100厘米</li>
-                            <li>将米转换为厘米，乘以100</li>
-                            <li>将厘米转换为米，除以100</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <!-- 挑战模式 -->
-                <div id="challenge-mode" class="hidden">
-                    <div class="bg-white rounded-2xl shadow-xl p-6 sm:p-8 text-center">
-                        <div class="inline-block bg-yellow-100 text-accent px-4 py-1 rounded-full mb-6 text-sm font-bold pulse">
-                            剩余时间: <span id="challenge-timer" class="text-xl">30</span>秒
-                        </div>
-                        
-                        <p class="text-xl sm:text-2xl mb-6 sm:mb-8" id="challenge-question">5公斤 = ____ 克</p>
-                        
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl mx-auto mb-8">
-                            <button class="challenge-option bg-gray-100 hover:bg-gray-200 p-4 rounded-lg transition-colors text-lg" onclick="selectChallengeAnswer(this); onButtonClick(this)">200</button>
-                            <button class="challenge-option bg-gray-100 hover:bg-gray-200 p-4 rounded-lg transition-colors text-lg" onclick="selectChallengeAnswer(this); onButtonClick(this)">500</button>
-                            <button class="challenge-option bg-gray-100 hover:bg-gray-200 p-4 rounded-lg transition-colors text-lg" onclick="selectChallengeAnswer(this); onButtonClick(this)">5000</button>
-                            <button class="challenge-option bg-gray-100 hover:bg-gray-200 p-4 rounded-lg transition-colors text-lg" onclick="selectChallengeAnswer(this); onButtonClick(this)">10000</button>
-                        </div>
-                        
-                        <div id="challenge-feedback" class="hidden p-4 rounded-lg mb-4"></div>
-                    </div>
-                </div>
-
-                <!-- 配对模式 -->
-                <div id="matching-mode" class="hidden">
-                    <div class="bg-white rounded-2xl shadow-xl p-6">
-                        <p class="text-center text-lg mb-6">找出等值的单位组合</p>
-                        
-                        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4 mb-6" id="matching-cards">
-                            <!-- 卡片将通过JS动态生成 -->
-                        </div>
-                        
-                        <div id="matching-feedback" class="hidden text-center p-4 rounded-lg mb-4"></div>
-                        
-                        <div class="text-center">
-                            <p class="text-gray-600 mb-2">已匹配: <span id="matches-count">0</span>/6</p>
-                            <button onclick="resetMatchingGame(); onButtonClick(this)" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg transition-colors">
-                                重新开始
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- BOSS模式 -->
-                <div id="boss-mode" class="hidden">
-                    <div class="bg-white rounded-2xl shadow-xl p-6 sm:p-8">
-                        <div class="text-center mb-6">
-                            <div class="inline-block bg-red-100 text-danger px-4 py-2 rounded-full mb-4">
-                                <i class="fa fa-bolt mr-2"></i>终极挑战
-                            </div>
-                            <p class="text-xl sm:text-2xl mb-6" id="boss-question">5769g = ____ kg ____ g</p>
-                            
-                            <!-- 双单位输入区域 - 左右排列 -->
-                            <div class="flex flex-wrap justify-center gap-4 my-6 items-center">
-                                <div class="flex items-center">
-                                    <input type="number" id="boss-answer-large" class="border-2 border-gray-300 rounded-lg px-4 py-3 text-lg w-36 focus:outline-none focus:border-danger" placeholder="输入">
-                                    <span id="boss-unit-large" class="text-xl ml-2">kg</span>
-                                </div>
-                                <span class="text-gray-500">和</span>
-                                <div class="flex items-center">
-                                    <input type="number" id="boss-answer-small" class="border-2 border-gray-300 rounded-lg px-4 py-3 text-lg w-36 focus:outline-none focus:border-danger" placeholder="输入">
-                                    <span id="boss-unit-small" class="text-xl ml-2">g</span>
-                                </div>
-                            </div>
-                            
-                            <button onclick="checkBossAnswer(); onButtonClick(this)" class="bg-danger hover:bg-danger/90 text-white font-bold py-3 px-8 rounded-lg transition-colors">
-                                提交答案
-                            </button>
-                        </div>
-                        
-                        <div id="boss-feedback" class="hidden text-center p-4 rounded-lg mb-4"></div>
-                        
-                        <div class="bg-gray-50 rounded-xl p-4 mt-6">
-                            <h4 class="font-bold mb-2 text-center">BOSS进度</h4>
-                            <div class="w-full bg-gray-200 rounded-full h-4 mb-2">
-                                <div id="boss-progress-bar" class="bg-danger h-4 rounded-full" style="width: 0%"></div>
-                            </div>
-                            <p class="text-sm text-center text-gray-600">击败5个BOSS完成挑战</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 结果界面 -->
-            <div id="result-screen" class="hidden bg-white rounded-2xl shadow-xl p-6 sm:p-8 text-center">
-                <div id="result-icon" class="text-8xl mb-6 mx-auto w-fit"></div>
-                <h2 class="text-3xl font-bold mb-4" id="result-title"></h2>
-                <p class="text-xl mb-8" id="result-message"></p>
-                
-                <div class="grid grid-cols-2 gap-4 max-w-md mx-auto mb-8">
-                    <div class="bg-gray-50 rounded-lg p-4">
-                        <p class="text-gray-600">本局得分</p>
-                        <p id="round-score" class="text-2xl font-bold text-primary">0</p>
-                    </div>
-                    <div class="bg-gray-50 rounded-lg p-4">
-                        <p class="text-gray-600">正确率</p>
-                        <p id="accuracy" class="text-2xl font-bold text-secondary">0%</p>
-                    </div>
-                </div>
-                
-                <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                    <button onclick="playAgain(); onButtonClick(this)" class="bg-primary hover:bg-primary/90 text-white font-bold py-3 px-8 rounded-lg transition-colors">
-                        再玩一次
-                    </button>
-                    <button onclick="backToMain(); onButtonClick(this)" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 px-8 rounded-lg transition-colors">
-                        返回主页
-                    </button>
-                </div>
-            </div>
-        </main>
-
-        <!-- 页脚 -->
-        <footer class="mt-10 text-center text-gray-500 text-sm">
-            <p>单位换算大挑战 © 2025 许峵育老师 - 学习长度、质量和体积单位换算的趣味游戏</p>
-        </footer>
+        <!-- Game Over Screen -->
+        <div id="game-over-screen" class="game-over-screen">
+            <h2 class="title">游戏结束！</h2>
+            <p>你的最终分数是: <span id="final-score">0</span></p>
+            <button id="restart-game-btn" class="btn btn-primary">再玩一次</button>
+        </div>
     </div>
 
     <script>
-        // 游戏状态变量
-        let currentMode = null;
-        let currentUnit = null;
-        let questionsAnswered = 0;
-        let totalQuestions = 10;
-        let correctAnswers = 0;
-        let timer = null;
-        let timeLeft = 30;
-        let flippedCards = [];
-        let matchedPairs = 0;
-        let bossLevel = 0;
-        let totalBosses = 5;
-        let currentScore = 0;
-        let useChineseUnits = true; // 控制当前游戏使用中文还是英文单位（全局统一）
-        let previousQuestions = []; // 记录之前的题目，避免重复
-        
-        // 分数记录 - 按模式和单位类型存储
-        let scoreRecords = JSON.parse(localStorage.getItem('unitConversionScores')) || {
-            practice: { length: 0, mass: 0, volume: 0 },
-            challenge: { length: 0, mass: 0, volume: 0 },
-            matching: { length: 0, mass: 0, volume: 0 },
-            boss: { length: 0, mass: 0, volume: 0 }
-        };
+        // Game State
+        let score = 0;
+        let currentQuestion = {};
+        let questionType = 0; // 0: Conversion, 1: Addition, 2: Subtraction
+        let questionsAttempted = 0;
+        const totalQuestions = 10; // Total questions per game
+        const timePerQuestion = 60; // seconds per question (Changed to 60)
+        let timeLeft = timePerQuestion;
+        let timerInterval;
 
-        // 单位换算比率
-        const conversionRates = {
-            length: 100,    // 1米 = 100厘米
-            mass: 1000,     // 1公斤 = 1000克
-            volume: 1000    // 1升 = 1000毫升
-        };
+        // DOM Elements
+        const appContainer = document.querySelector('.app-container');
+        const startScreen = document.getElementById('start-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const gameOverScreen = document.getElementById('game-over-screen');
 
-        // 单位名称 - 同时包含中文和英文单位
-        const unitNames = {
-            length: { 
-                large: { cn: "米", en: "m" }, 
-                small: { cn: "厘米", en: "cm" } 
-            },
-            mass: { 
-                large: { cn: "公斤", en: "kg" }, 
-                small: { cn: "克", en: "g" } 
-            },
-            volume: { 
-                large: { cn: "升", en: "L" }, 
-                small: { cn: "毫升", en: "mL" } 
-            }
-        };
+        const scoreDisplay = document.getElementById('score');
+        const questionsAttemptedDisplay = document.getElementById('questions-attempted');
+        const totalQuestionsDisplay = document.getElementById('total-questions');
+        const questionText = document.getElementById('question');
+        const answerInputsDiv = document.getElementById('answer-inputs');
+        const checkBtn = document.getElementById('check-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const feedbackMessage = document.getElementById('feedback');
+        const finalScoreDisplay = document.getElementById('final-score');
+        const timerBar = document.getElementById('timer-bar');
 
-        // 每种模式的分数设置
-        const scoreSettings = {
-            practice: { correct: 5, timeBonus: 0 },
-            challenge: { correct: 5, timeBonus: 0.5 },
-            matching: { correct: 15, wrongPenalty: 3 },
-            boss: { correct: 50, wrongPenalty: 10 }
-        };
+        // Sound Effects (using Tone.js)
+        const correctSound = new Tone.MembraneSynth().toDestination();
+        const incorrectSound = new Tone.NoiseSynth({
+            noise: { type: 'pink' },
+            envelope: { attack: 0.005, decay: 0.1, sustain: 0.05, release: 0.1 }
+        }).toDestination();
+        const timerTickSound = new Tone.PolySynth(Tone.Synth, {
+            oscillator: { type: 'sine' },
+            envelope: { attack: 0.001, decay: 0.05, sustain: 0.01, release: 0.05 }
+        }).toDestination();
 
-        // 正面反馈消息
-        const positiveFeedback = [
-            "太棒了！",
-            "真厉害！",
-            "太聪明了！",
-            "完全正确！",
-            "做得好！",
-            "太优秀了！",
-            "继续加油！",
-            "太赞了！"
-        ];
 
-        // 页面加载完成后初始化分数显示
-        document.addEventListener('DOMContentLoaded', function() {
-            updateScoreRecordsDisplay();
-            document.getElementById('view-scores-btn').addEventListener('click', showScoresScreen);
-        });
-
-        // 按钮点击效果
-        function onButtonClick(element) {
-            // 添加点击动画
-            element.classList.add('scale-95');
-            setTimeout(() => {
-                element.classList.remove('scale-95');
-            }, 150);
+        /**
+         * 将米转换为厘米
+         * @param {number} m - 米数
+         * @returns {number} 厘米数
+         */
+        function mToCm(m) {
+            return m * 100;
         }
 
-        // 选择游戏模式
-        function selectMode(mode) {
-            currentMode = mode;
-            highlightSelectedMode(mode);
+        /**
+         * 将厘米转换为米和剩余厘米
+         * @param {number} cm - 厘米数
+         * @returns {{m: number, cm: number}} 包含米和厘米的对象
+         */
+        function cmToMAndCm(cm) {
+            const m = Math.floor(cm / 100);
+            const remainingCm = cm % 100;
+            return { m, cm: remainingCm };
         }
 
-        // 高亮选中的游戏模式
-        function highlightSelectedMode(mode) {
-            // 重置所有模式的高亮状态
-            document.querySelectorAll('#start-screen .flex-1').forEach(el => {
-                el.classList.remove('ring-4', 'ring-offset-2');
-            });
-            
-            // 高亮选中的模式
-            if (mode === 'practice') {
-                document.querySelector('[onclick="selectMode(\'practice\')"]').classList.add('ring-4', 'ring-primary', 'ring-offset-2');
-            } else if (mode === 'challenge') {
-                document.querySelector('[onclick="selectMode(\'challenge\')"]').classList.add('ring-4', 'ring-secondary', 'ring-offset-2');
-            } else if (mode === 'matching') {
-                document.querySelector('[onclick="selectMode(\'matching\')"]').classList.add('ring-4', 'ring-accent', 'ring-offset-2');
-            } else if (mode === 'boss') {
-                document.querySelector('[onclick="selectMode(\'boss\')"]').classList.add('ring-4', 'ring-danger', 'ring-offset-2');
-            }
+        /**
+         * 生成一个随机整数（包含最小值和最大值）
+         * @param {number} min - 最小值
+         * @param {number} max - 最大值
+         * @returns {number} 随机整数
+         */
+        function getRandomInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
         }
 
-        // 选择单位类型并开始游戏
-        function selectUnit(unit) {
-            if (!currentMode) {
-                alert('请先选择游戏模式');
-                return;
-            }
-            
-            currentUnit = unit;
-            // 为当前游戏随机选择使用中文或英文单位（全局统一）
-            useChineseUnits = Math.random() > 0.5;
-            startGame();
-        }
+        /**
+         * 生成长度单位换算问题
+         */
+        function generateConversionQuestion() {
+            const type = getRandomInt(0, 1); // 0: m to cm, 1: cm to m & cm
 
-        // 开始游戏
-        function startGame() {
-            // 重置当前游戏状态
-            resetCurrentGameState();
-            
-            // 更新游戏标题和单位类型显示
-            document.getElementById('game-mode-title').textContent = getModeName(currentMode);
-            document.getElementById('game-unit-type').textContent = getUnitTypeName(currentUnit);
-            
-            // 显示游戏屏幕，隐藏开始屏幕
-            document.getElementById('start-screen').classList.add('hidden');
-            document.getElementById('scores-screen').classList.add('hidden');
-            document.getElementById('game-screen').classList.remove('hidden');
-            
-            // 根据选择的模式显示相应的游戏界面
-            if (currentMode === 'practice') {
-                document.getElementById('practice-mode').classList.remove('hidden');
-                generatePracticeQuestion();
-                updateConversionTips();
-            } else if (currentMode === 'challenge') {
-                document.getElementById('challenge-mode').classList.remove('hidden');
-                document.getElementById('timer-container').classList.remove('hidden');
-                generateChallengeQuestion();
-                startChallengeTimer();
-            } else if (currentMode === 'matching') {
-                document.getElementById('matching-mode').classList.remove('hidden');
-                generateMatchingCards();
-            } else if (currentMode === 'boss') {
-                document.getElementById('boss-mode').classList.remove('hidden');
-                generateBossQuestion();
-            }
-            
-            // 更新进度显示
-            updateProgressDisplay();
-        }
-
-        // 获取模式名称
-        function getModeName(mode) {
-            const modeNames = {
-                practice: "练习模式",
-                challenge: "挑战模式",
-                matching: "配对模式",
-                boss: "终极BOSS"
-            };
-            return modeNames[mode] || mode;
-        }
-
-        // 获取单位类型名称
-        function getUnitTypeName(unit) {
-            const unitTypeNames = {
-                length: useChineseUnits ? "长度单位 (米 ↔ 厘米)" : "长度单位 (m ↔ cm)",
-                mass: useChineseUnits ? "质量单位 (公斤 ↔ 克)" : "质量单位 (kg ↔ g)",
-                volume: useChineseUnits ? "体积单位 (升 ↔ 毫升)" : "体积单位 (L ↔ mL)"
-            };
-            return unitTypeNames[unit] || unit;
-        }
-
-        // 重置当前游戏状态
-        function resetCurrentGameState() {
-            questionsAnswered = 0;
-            correctAnswers = 0;
-            bossLevel = 0;
-            matchedPairs = 0;
-            flippedCards = [];
-            currentScore = 0;
-            previousQuestions = []; // 清空之前的题目记录
-            
-            // 清除计时器
-            if (timer) {
-                clearInterval(timer);
-                timer = null;
-            }
-            
-            // 更新显示
-            document.getElementById('current-score-display').textContent = currentScore;
-            document.getElementById('progress-display').textContent = `${questionsAnswered}/${totalQuestions}`;
-            
-            // 隐藏所有游戏模式界面
-            document.querySelectorAll('#game-screen > div[id$="-mode"]').forEach(el => {
-                el.classList.add('hidden');
-            });
-            
-            // 隐藏反馈信息
-            document.querySelectorAll('[id$="-feedback"]').forEach(el => {
-                el.classList.add('hidden');
-            });
-        }
-
-        // 更新进度显示
-        function updateProgressDisplay() {
-            if (currentMode === 'matching') {
-                document.getElementById('matches-count').textContent = matchedPairs;
-                document.getElementById('progress-display').textContent = `${matchedPairs}/6`;
-            } else if (currentMode === 'boss') {
-                document.getElementById('progress-display').textContent = `${bossLevel}/${totalBosses}`;
-                document.getElementById('boss-progress-bar').style.width = `${(bossLevel / totalBosses) * 100}%`;
-            } else {
-                document.getElementById('progress-display').textContent = `${questionsAnswered}/${totalQuestions}`;
-            }
-        }
-
-        // 生成练习模式问题
-        function generatePracticeQuestion() {
-            const rate = conversionRates[currentUnit];
-            const units = unitNames[currentUnit];
-            const unitType = useChineseUnits ? 'cn' : 'en';
-            
-            let value, question, correctAnswer, questionType;
-            let isNewQuestion = false;
-            let maxAttempts = 10; // 最大尝试次数，避免无限循环
-            
-            // 尝试生成新的不重复的题目
-            while (!isNewQuestion && maxAttempts > 0) {
-                maxAttempts--;
-                
-                // 随机选择题目类型
-                questionType = Math.floor(Math.random() * 3); // 0-2 三种类型
-                
-                switch (questionType) {
-                    case 0:
-                        // 大单位转小单位 (如：6米 = ____ 厘米 或 6m = ____ cm)
-                        value = Math.floor(Math.random() * 10) + 1; // 1-10
-                        question = `${value}${units.large[unitType]} = ____ ${units.small[unitType]}`;
-                        correctAnswer = value * rate;
-                        break;
-                    case 1:
-                        // 小单位转大单位 (如：600厘米 = ____ 米 或 600cm = ____ m)
-                        value = (Math.floor(Math.random() * 10) + 1) * rate;
-                        question = `${value}${units.small[unitType]} = ____ ${units.large[unitType]}`;
-                        correctAnswer = value / rate;
-                        break;
-                    case 2:
-                        // 小单位转复合单位 (如：612厘米 = ____ 米 ____ 厘米 或 612cm = ____m ____cm)
-                        const largePart = Math.floor(Math.random() * 10) + 1; // 1-10
-                        const smallPart = Math.floor(Math.random() * (rate - 1)) + 1; // 1-rate-1
-                        value = largePart * rate + smallPart;
-                        question = `${value}${units.small[unitType]} = ____ ${units.large[unitType]} ____ ${units.small[unitType]}`;
-                        correctAnswer = `${largePart} ${smallPart}`;
-                        break;
-                }
-                
-                // 检查是否是新题目
-                isNewQuestion = !previousQuestions.includes(question);
-            }
-            
-            // 如果尝试了多次仍然无法生成新题目，则清空历史记录
-            if (!isNewQuestion) {
-                previousQuestions = [];
-            }
-            
-            // 添加到历史记录
-            previousQuestions.push(question);
-            // 限制历史记录长度，避免占用过多内存
-            if (previousQuestions.length > 15) {
-                previousQuestions.shift();
-            }
-            
-            // 隐藏所有输入区域
-            document.getElementById('practice-answer').parentElement.classList.add('hidden');
-            document.getElementById('practice-answer-double').classList.add('hidden');
-            
-            // 根据题目类型显示相应的输入区域
-            if (questionType === 2) {
-                // 显示双单位输入框
-                document.getElementById('practice-answer-double').classList.remove('hidden');
-                document.getElementById('practice-unit-large').textContent = units.large[unitType];
-                document.getElementById('practice-unit-small').textContent = units.small[unitType];
-                document.getElementById('practice-answer-large').value = '';
-                document.getElementById('practice-answer-small').value = '';
-                document.getElementById('practice-answer-large').focus();
-            } else {
-                // 显示单一输入框
-                document.getElementById('practice-answer').parentElement.classList.remove('hidden');
-                document.getElementById('practice-unit').textContent = questionType === 0 ? units.small[unitType] : units.large[unitType];
-                document.getElementById('practice-answer').value = '';
-                document.getElementById('practice-answer').focus();
-            }
-            
-            // 存储正确答案和单位类型
-            window.currentAnswer = correctAnswer;
-            window.currentQuestionType = questionType;
-            
-            // 更新界面
-            document.getElementById('practice-question').textContent = question;
-        }
-
-        // 更新换算提示
-        function updateConversionTips() {
-            const units = unitNames[currentUnit];
-            const rate = conversionRates[currentUnit];
-            const unitType = useChineseUnits ? 'cn' : 'en';
-            
-            let tips = `
-                <li>1${units.large[unitType]} = ${rate}${units.small[unitType]}</li>
-                <li>将${units.large[unitType]}转换为${units.small[unitType]}，乘以${rate}</li>
-                <li>将${units.small[unitType]}转换为${units.large[unitType]}，除以${rate}</li>
-            `;
-            
-            document.getElementById('conversion-tips').innerHTML = tips;
-        }
-
-        // 检查练习模式答案
-        function checkPracticeAnswer() {
-            const questionType = window.currentQuestionType;
-            const feedbackElement = document.getElementById('practice-feedback');
-            let userAnswer, correctAnswer = window.currentAnswer.toString();
-            
-            // 获取用户答案（根据题目类型）
-            if (questionType === 2) {
-                // 双单位答案
-                const largeVal = document.getElementById('practice-answer-large').value.trim();
-                const smallVal = document.getElementById('practice-answer-small').value.trim();
-                userAnswer = `${largeVal} ${smallVal}`;
-                
-                // 验证输入
-                if (!largeVal || !smallVal) {
-                    feedbackElement.textContent = "请填写所有答案";
-                    feedbackElement.className = "text-center p-4 rounded-lg mb-4 bg-yellow-100 text-yellow-800";
-                    feedbackElement.classList.remove('hidden');
-                    return;
-                }
-            } else {
-                // 单一数值答案
-                userAnswer = document.getElementById('practice-answer').value.trim();
-                
-                // 验证输入
-                if (!userAnswer) {
-                    feedbackElement.textContent = "请输入答案";
-                    feedbackElement.className = "text-center p-4 rounded-lg mb-4 bg-yellow-100 text-yellow-800";
-                    feedbackElement.classList.remove('hidden');
-                    return;
-                }
-            }
-            
-            questionsAnswered++;
-            let isCorrect = false;
-            
-            // 检查复合单位答案（允许数字间有空格或无空格）
-            if (correctAnswer.includes(' ')) {
-                const [correct1, correct2] = correctAnswer.split(' ');
-                // 允许用户输入格式如 "6 12" 或 "612" 或 "6  12"（多个空格）
-                const userParts = userAnswer.split(/\s+/).filter(p => p);
-                isCorrect = (userParts.length === 2 && 
-                            parseInt(userParts[0]) === parseInt(correct1) && 
-                            parseInt(userParts[1]) === parseInt(correct2)) ||
-                           (userAnswer === correct1 + correct2);
-            } else {
-                // 单一数值答案
-                isCorrect = parseFloat(userAnswer) === parseFloat(correctAnswer);
-            }
-            
-            // 显示反馈并设置自动隐藏时间
-            if (isCorrect) {
-                // 答案正确
-                correctAnswers++;
-                currentScore += scoreSettings.practice.correct;
-                
-                // 随机选择正面反馈
-                const feedbackText = positiveFeedback[Math.floor(Math.random() * positiveFeedback.length)];
-                feedbackElement.textContent = `${feedbackText} 获得 ${scoreSettings.practice.correct} 分！`;
-                feedbackElement.className = "text-center p-4 rounded-lg mb-4 bg-green-100 text-green-800 bounce-in correct-animation";
-                
-                // 输入框动画效果
-                if (questionType === 2) {
-                    document.getElementById('practice-answer-large').classList.add('border-green-500', 'correct-animation');
-                    document.getElementById('practice-answer-small').classList.add('border-green-500', 'correct-animation');
-                } else {
-                    document.getElementById('practice-answer').classList.add('border-green-500', 'correct-animation');
-                }
-            } else {
-                // 答案错误
-                feedbackElement.textContent = `错误。正确答案是 ${correctAnswer}`;
-                feedbackElement.className = "text-center p-4 rounded-lg mb-4 bg-red-100 text-red-800 bounce-in wrong-animation";
-                
-                // 输入框动画效果
-                if (questionType === 2) {
-                    document.getElementById('practice-answer-large').classList.add('border-red-500', 'wrong-animation');
-                    document.getElementById('practice-answer-small').classList.add('border-red-500', 'wrong-animation');
-                } else {
-                    document.getElementById('practice-answer').classList.add('border-red-500', 'wrong-animation');
-                }
-            }
-            
-            // 更新显示
-            feedbackElement.classList.remove('hidden');
-            document.getElementById('current-score-display').textContent = currentScore;
-            updateProgressDisplay();
-            
-            // 1秒后隐藏反馈
-            setTimeout(() => {
-                feedbackElement.classList.add('hidden');
-                
-                // 移除输入框动画和边框样式
-                if (questionType === 2) {
-                    document.getElementById('practice-answer-large').classList.remove('border-green-500', 'border-red-500', 'correct-animation', 'wrong-animation');
-                    document.getElementById('practice-answer-small').classList.remove('border-green-500', 'border-red-500', 'correct-animation', 'wrong-animation');
-                } else {
-                    document.getElementById('practice-answer').classList.remove('border-green-500', 'border-red-500', 'correct-animation', 'wrong-animation');
-                }
-                
-                // 检查是否完成所有问题
-                if (questionsAnswered >= totalQuestions) {
-                    setTimeout(endGame, 500);
-                } else {
-                    // 生成下一个问题
-                    generatePracticeQuestion();
-                }
-            }, 1000); // 反馈显示时间缩短为1秒
-        }
-
-        // 生成挑战模式问题
-        function generateChallengeQuestion() {
-            const rate = conversionRates[currentUnit];
-            const units = unitNames[currentUnit];
-            const unitType = useChineseUnits ? 'cn' : 'en';
-            
-            let question, answerUnit, correctAnswer, value;
-            let isNewQuestion = false;
-            let maxAttempts = 10;
-            
-            // 尝试生成新的不重复的题目
-            while (!isNewQuestion && maxAttempts > 0) {
-                maxAttempts--;
-                
-                // 随机决定是大单位转小单位还是小单位转大单位
-                const isLargeToSmall = Math.random() > 0.5;
-                
-                // 生成随机数值
-                if (isLargeToSmall) {
-                    // 大单位转小单位 (如：6米 = ____ 厘米 或 6m = ____ cm)
-                    value = Math.floor(Math.random() * 10) + 1; // 1-10
-                    question = `${value}${units.large[unitType]} = ____ ${units.small[unitType]}`;
-                    answerUnit = units.small[unitType];
-                    correctAnswer = value * rate;
-                } else {
-                    // 小单位转大单位 (如：600厘米 = ____ 米 或 600cm = ____ m)
-                    value = (Math.floor(Math.random() * 10) + 1) * rate;
-                    question = `${value}${units.small[unitType]} = ____ ${units.large[unitType]}`;
-                    answerUnit = units.large[unitType];
-                    correctAnswer = value / rate;
-                }
-                
-                // 检查是否是新题目
-                isNewQuestion = !previousQuestions.includes(question);
-            }
-            
-            // 如果尝试了多次仍然无法生成新题目，则清空历史记录
-            if (!isNewQuestion) {
-                previousQuestions = [];
-            }
-            
-            // 添加到历史记录
-            previousQuestions.push(question);
-            if (previousQuestions.length > 15) {
-                previousQuestions.shift();
-            }
-            
-            // 存储正确答案和单位类型
-            window.currentAnswer = correctAnswer;
-            window.currentAnswerUnit = answerUnit;
-            
-            // 更新问题显示
-            document.getElementById('challenge-question').textContent = question;
-            
-            // 生成选项（1个正确，3个错误）- 干扰项更接近正确答案
-            const options = [correctAnswer];
-            
-            // 生成错误选项 - 更接近正确答案（在0.7-1.3倍范围内）
-            while (options.length < 4) {
-                let wrongAnswer;
-                do {
-                    // 生成一个接近正确答案的错误选项（在正确答案的0.7-1.3倍范围内）
-                    const factor = 0.7 + Math.random() * 0.6;
-                    wrongAnswer = Math.round(correctAnswer * factor);
-                    
-                    // 特殊处理小数值，避免出现0
-                    if (wrongAnswer === 0 && correctAnswer > 0) {
-                        wrongAnswer = 1;
-                    }
-                    
-                    // 确保不等于正确答案
-                } while (wrongAnswer === correctAnswer || options.includes(wrongAnswer));
-                
-                options.push(wrongAnswer);
-            }
-            
-            // 打乱选项顺序
-            options.sort(() => Math.random() - 0.5);
-            
-            // 更新选项显示
-            const optionButtons = document.querySelectorAll('.challenge-option');
-            optionButtons.forEach((button, index) => {
-                button.textContent = `${options[index]}${answerUnit}`;
-                button.className = "challenge-option bg-gray-100 hover:bg-gray-200 p-4 rounded-lg transition-colors text-lg";
-                button.dataset.correct = options[index] === correctAnswer;
-            });
-            
-            // 隐藏反馈
-            document.getElementById('challenge-feedback').classList.add('hidden');
-        }
-
-        // 开始挑战模式计时器
-        function startChallengeTimer() {
-            // 确保清除任何现有计时器
-            if (timer) {
-                clearInterval(timer);
-            }
-            
-            timeLeft = 30;
-            document.getElementById('challenge-timer').textContent = timeLeft;
-            document.getElementById('timer-display').textContent = timeLeft;
-            
-            // 使用let声明确保在回调中可以访问最新的timer变量
-            timer = setInterval(() => {
-                timeLeft--;
-                
-                // 时间警告 - 最后5秒
-                if (timeLeft <= 5) {
-                    document.getElementById('challenge-timer').classList.add('text-red-600', 'font-bold', 'pulse');
-                } else {
-                    document.getElementById('challenge-timer').classList.remove('text-red-600', 'font-bold', 'pulse');
-                }
-                
-                // 双重检查计时器是否仍然有效
-                if (timer) {
-                    document.getElementById('challenge-timer').textContent = timeLeft;
-                    document.getElementById('timer-display').textContent = timeLeft;
-                    
-                    // 时间到
-                    if (timeLeft <= 0) {
-                        clearInterval(timer);
-                        timer = null;
-                        
-                        const feedbackElement = document.getElementById('challenge-feedback');
-                        feedbackElement.textContent = `时间到！正确答案是 ${window.currentAnswer}${window.currentAnswerUnit}`;
-                        feedbackElement.className = "text-center p-4 rounded-lg mb-4 bg-red-100 text-red-800 bounce-in wrong-animation";
-                        feedbackElement.classList.remove('hidden');
-                        
-                        // 高亮正确答案
-                        document.querySelectorAll('.challenge-option').forEach(btn => {
-                            if (btn.dataset.correct === "true") {
-                                btn.className = "challenge-option bg-green-100 p-4 rounded-lg transition-colors text-lg correct-animation";
-                            }
-                        });
-                        
-                        questionsAnswered++;
-                        updateProgressDisplay();
-                        
-                        // 1秒后处理下一步
-                        setTimeout(() => {
-                            feedbackElement.classList.add('hidden');
-                            
-                            // 检查是否完成所有问题
-                            if (questionsAnswered >= totalQuestions) {
-                                setTimeout(endGame, 500);
-                            } else {
-                                // 生成下一个问题
-                                generateChallengeQuestion();
-                                startChallengeTimer();
-                            }
-                        }, 1000);
-                    }
-                }
-            }, 1000);
-        }
-
-        // 选择挑战模式答案
-        function selectChallengeAnswer(button) {
-            if (!timer) return; // 防止重复点击
-            
-            clearInterval(timer);
-            timer = null;
-            
-            questionsAnswered++;
-            
-            const feedbackElement = document.getElementById('challenge-feedback');
-            
-            if (button.dataset.correct === "true") {
-                // 答案正确
-                correctAnswers++;
-                const pointsEarned = Math.round(scoreSettings.challenge.correct + (timeLeft * scoreSettings.challenge.timeBonus));
-                currentScore += pointsEarned;
-                button.className = "challenge-option bg-green-100 p-4 rounded-lg transition-colors text-lg correct-animation";
-                
-                // 随机选择正面反馈
-                const feedbackText = positiveFeedback[Math.floor(Math.random() * positiveFeedback.length)];
-                feedbackElement.textContent = `${feedbackText} 获得 ${pointsEarned} 分！`;
-                feedbackElement.className = "text-center p-4 rounded-lg mb-4 bg-green-100 text-green-800 bounce-in correct-animation";
-            } else {
-                // 答案错误
-                button.className = "challenge-option bg-red-100 p-4 rounded-lg transition-colors text-lg wrong-animation";
-                // 高亮正确答案
-                document.querySelectorAll('.challenge-option').forEach(btn => {
-                    if (btn.dataset.correct === "true") {
-                        btn.className = "challenge-option bg-green-100 p-4 rounded-lg transition-colors text-lg correct-animation";
-                    }
-                });
-                feedbackElement.textContent = `错误。正确答案是 ${window.currentAnswer}${window.currentAnswerUnit}`;
-                feedbackElement.className = "text-center p-4 rounded-lg mb-4 bg-red-100 text-red-800 bounce-in wrong-animation";
-            }
-            
-            // 更新显示
-            feedbackElement.classList.remove('hidden');
-            document.getElementById('current-score-display').textContent = currentScore;
-            updateProgressDisplay();
-            
-            // 1秒后处理下一步
-            setTimeout(() => {
-                feedbackElement.classList.add('hidden');
-                
-                // 检查是否完成所有问题
-                if (questionsAnswered >= totalQuestions) {
-                    setTimeout(endGame, 500);
-                } else {
-                    // 生成下一个问题
-                    generateChallengeQuestion();
-                    startChallengeTimer();
-                }
-            }, 1000);
-        }
-
-        // 生成配对模式卡片 - 确保不混合中英文单位
-        function generateMatchingCards() {
-            const rate = conversionRates[currentUnit];
-            const units = unitNames[currentUnit];
-            const cardsContainer = document.getElementById('matching-cards');
-            cardsContainer.innerHTML = '';
-            
-            // 统一使用中文或英文单位（由useChineseUnits控制）
-            const unitType = useChineseUnits ? 'cn' : 'en';
-            
-            // 生成6对匹配的卡片，确保不重复
-            const cardPairs = [];
-            const usedValues = [];
-            
-            while (cardPairs.length < 6) {
-                // 随机值1-10
-                const value = Math.floor(Math.random() * 10) + 1;
-                
-                // 确保值不重复
-                if (!usedValues.includes(value)) {
-                    usedValues.push(value);
-                    
-                    const largeUnitValue = `${value}${units.large[unitType]}`;
-                    const smallUnitValue = `${value * rate}${units.small[unitType]}`;
-                    
-                    cardPairs.push({ value: largeUnitValue, pair: smallUnitValue });
-                    cardPairs.push({ value: smallUnitValue, pair: largeUnitValue });
-                }
-            }
-            
-            // 打乱卡片顺序
-            cardPairs.sort(() => Math.random() - 0.5);
-            
-            // 创建卡片元素
-            cardPairs.forEach((card, index) => {
-                const cardElement = document.createElement('div');
-                cardElement.className = 'card-flip relative cursor-pointer h-24';
-                cardElement.dataset.value = card.value;
-                cardElement.dataset.pair = card.pair;
-                cardElement.dataset.index = index;
-                cardElement.onclick = flipCard;
-                
-                cardElement.innerHTML = `
-                    <div class="card-front absolute w-full h-full bg-gray-100 rounded-xl flex items-center justify-center font-bold text-lg shadow-md transition-all">
-                        <i class="fa fa-question-circle text-gray-400 text-2xl"></i>
-                    </div>
-                    <div class="card-back absolute w-full h-full bg-primary text-white rounded-xl flex items-center justify-center font-bold text-lg shadow-md transition-all">
-                        ${card.value}
-                    </div>
+            if (type === 0) { // 米到厘米
+                const meters = getRandomInt(1, 10);
+                const correctCm = mToCm(meters);
+                questionText.textContent = `${meters}米 = `;
+                answerInputsDiv.innerHTML = `
+                    <input type="number" id="answer1" placeholder="" class="flex-grow"> <span>厘米</span>
                 `;
-                
-                cardsContainer.appendChild(cardElement);
-            });
-        }
-
-        // 翻转卡片
-        function flipCard() {
-            const card = this;
-            
-            // 已经匹配的卡片不能再翻转
-            if (card.classList.contains('matched') || flippedCards.length >= 2) {
-                return;
-            }
-            
-            // 翻转卡片
-            card.classList.add('flipped');
-            flippedCards.push(card);
-            
-            // 如果翻了两张卡片，检查是否匹配
-            if (flippedCards.length === 2) {
-                setTimeout(checkForMatch, 800);
-            }
-        }
-
-        // 检查卡片是否匹配
-        function checkForMatch() {
-            const card1 = flippedCards[0];
-            const card2 = flippedCards[1];
-            const feedbackElement = document.getElementById('matching-feedback');
-            
-            if (card1.dataset.pair === card2.dataset.value) {
-                // 匹配成功
-                card1.classList.add('matched');
-                card2.classList.add('matched');
-                card1.querySelector('.card-back').classList.add('bg-green-500', 'correct-animation');
-                card2.querySelector('.card-back').classList.add('bg-green-500', 'correct-animation');
-                
-                matchedPairs++;
-                currentScore += scoreSettings.matching.correct;
-                
-                // 随机选择正面反馈
-                const feedbackText = positiveFeedback[Math.floor(Math.random() * positiveFeedback.length)];
-                feedbackElement.textContent = `${feedbackText} 获得 ${scoreSettings.matching.correct} 分！`;
-                feedbackElement.className = "text-center p-4 rounded-lg mb-4 bg-green-100 text-green-800 bounce-in correct-animation";
-                feedbackElement.classList.remove('hidden');
-                
-                // 更新分数
-                document.getElementById('current-score-display').textContent = currentScore;
-                updateProgressDisplay();
-                
-                // 1秒后隐藏反馈
-                setTimeout(() => {
-                    feedbackElement.classList.add('hidden');
-                    
-                    // 检查是否完成所有匹配
-                    if (matchedPairs >= 6) {
-                        setTimeout(endGame, 500);
-                    }
-                }, 1000);
-            } else {
-                // 匹配失败
-                card1.classList.add('wrong-animation');
-                card2.classList.add('wrong-animation');
-                
-                feedbackElement.textContent = "匹配失败，再试一次！";
-                feedbackElement.className = "text-center p-4 rounded-lg mb-4 bg-red-100 text-red-800 bounce-in wrong-animation";
-                feedbackElement.classList.remove('hidden');
-                
-                // 扣分（但不低于0）
-                if (currentScore >= scoreSettings.matching.wrongPenalty) {
-                    currentScore -= scoreSettings.matching.wrongPenalty;
-                    document.getElementById('current-score-display').textContent = currentScore;
-                }
-                
-                // 1秒后翻回卡片并隐藏反馈
-                setTimeout(() => {
-                    card1.classList.remove('flipped', 'wrong-animation');
-                    card2.classList.remove('flipped', 'wrong-animation');
-                    feedbackElement.classList.add('hidden');
-                }, 1000);
-            }
-            
-            // 重置翻转的卡片数组
-            flippedCards = [];
-        }
-
-        // 重置配对游戏
-        function resetMatchingGame() {
-            matchedPairs = 0;
-            flippedCards = [];
-            previousQuestions = [];
-            generateMatchingCards();
-            updateProgressDisplay();
-            document.getElementById('matching-feedback').classList.add('hidden');
-        }
-
-        // 生成BOSS模式问题
-        function generateBossQuestion() {
-            const rate = conversionRates[currentUnit];
-            const units = unitNames[currentUnit];
-            const unitType = useChineseUnits ? 'cn' : 'en';
-            
-            let question, correctAnswer, largeUnit, smallUnit;
-            let isNewQuestion = false;
-            let maxAttempts = 10;
-            
-            // 尝试生成新的不重复的题目
-            while (!isNewQuestion && maxAttempts > 0) {
-                maxAttempts--;
-                
-                // 小单位转复合单位 (如：5769g = ____ kg ____ g)
-                const largeValue = Math.floor(Math.random() * 5) + 1; // 1-5
-                const smallValue = Math.floor(Math.random() * (rate - 1)) + 1; // 1-rate-1
-                const totalSmall = largeValue * rate + smallValue;
-                
-                largeUnit = units.large[unitType];
-                smallUnit = units.small[unitType];
-                question = `${totalSmall}${smallUnit} = ____ ${largeUnit} ____ ${smallUnit}`;
-                correctAnswer = { large: largeValue, small: smallValue };
-                
-                // 检查是否是新题目
-                isNewQuestion = !previousQuestions.includes(question);
-            }
-            
-            // 如果尝试了多次仍然无法生成新题目，则清空历史记录
-            if (!isNewQuestion) {
-                previousQuestions = [];
-            }
-            
-            // 添加到历史记录
-            previousQuestions.push(question);
-            if (previousQuestions.length > 10) {
-                previousQuestions.shift();
-            }
-            
-            // 存储正确答案
-            window.currentAnswer = correctAnswer;
-            
-            // 更新界面
-            document.getElementById('boss-question').textContent = question;
-            document.getElementById('boss-answer-large').value = '';
-            document.getElementById('boss-answer-small').value = '';
-            document.getElementById('boss-unit-large').textContent = largeUnit;
-            document.getElementById('boss-unit-small').textContent = smallUnit;
-            document.getElementById('boss-answer-large').focus();
-        }
-
-        // 检查BOSS模式答案
-        function checkBossAnswer() {
-            const feedbackElement = document.getElementById('boss-feedback');
-            
-            // 获取用户答案（双单位）
-            const userLargeValue = document.getElementById('boss-answer-large').value.trim();
-            const userSmallValue = document.getElementById('boss-answer-small').value.trim();
-            const correctAnswer = window.currentAnswer;
-            
-            // 验证输入
-            if (!userLargeValue || !userSmallValue) {
-                feedbackElement.textContent = "请填写所有答案";
-                feedbackElement.className = "text-center p-4 rounded-lg mb-4 bg-yellow-100 text-yellow-800";
-                feedbackElement.classList.remove('hidden');
-                
-                // 添加动画效果
-                document.getElementById('boss-answer-large').classList.add('border-yellow-500', 'wrong-animation');
-                document.getElementById('boss-answer-small').classList.add('border-yellow-500', 'wrong-animation');
-                
-                // 1秒后移除动画
-                setTimeout(() => {
-                    document.getElementById('boss-answer-large').classList.remove('border-yellow-500', 'wrong-animation');
-                    document.getElementById('boss-answer-small').classList.remove('border-yellow-500', 'wrong-animation');
-                }, 1000);
-                
-                return;
-            }
-            
-            const isCorrect = (parseInt(userLargeValue) === correctAnswer.large && 
-                           parseInt(userSmallValue) === correctAnswer.small);
-            
-            // 处理结果
-            if (isCorrect) {
-                // 答案正确
-                correctAnswers++;
-                bossLevel++;
-                currentScore += scoreSettings.boss.correct;
-                
-                // 随机选择正面反馈
-                const feedbackText = positiveFeedback[Math.floor(Math.random() * positiveFeedback.length)];
-                feedbackElement.textContent = `${feedbackText} 击败了BOSS！获得 ${scoreSettings.boss.correct} 分！`;
-                feedbackElement.className = "text-center p-4 rounded-lg mb-4 bg-green-100 text-green-800 bounce-in correct-animation";
-                
-                // 添加动画效果
-                document.getElementById('boss-answer-large').classList.add('border-green-500', 'correct-animation');
-                document.getElementById('boss-answer-small').classList.add('border-green-500', 'correct-animation');
-                
-                // 检查是否完成所有BOSS
-                if (bossLevel >= totalBosses) {
-                    // 1秒后结束游戏
-                    setTimeout(() => {
-                        endGame();
-                    }, 1000);
-                    return;
-                }
-                
-                // 1秒后生成下一个BOSS问题
-                setTimeout(() => {
-                    feedbackElement.classList.add('hidden');
-                    document.getElementById('boss-answer-large').classList.remove('border-green-500', 'correct-animation');
-                    document.getElementById('boss-answer-small').classList.remove('border-green-500', 'correct-animation');
-                    generateBossQuestion();
-                }, 1000);
-            } else {
-                // 答案错误
-                const correctDisplay = `${correctAnswer.large}${unitNames[currentUnit].large.cn} ${correctAnswer.small}${unitNames[currentUnit].small.cn}`;
-                
-                feedbackElement.textContent = `答错了！正确答案是 ${correctDisplay}`;
-                feedbackElement.className = "text-center p-4 rounded-lg mb-4 bg-red-100 text-red-800 bounce-in wrong-animation";
-                
-                // 添加动画效果
-                document.getElementById('boss-answer-large').classList.add('border-red-500', 'wrong-animation');
-                document.getElementById('boss-answer-small').classList.add('border-red-500', 'wrong-animation');
-                
-                // 扣分（但不低于0）
-                if (currentScore >= scoreSettings.boss.wrongPenalty) {
-                    currentScore -= scoreSettings.boss.wrongPenalty;
-                    document.getElementById('current-score-display').textContent = currentScore;
-                }
-                
-                // 1秒后隐藏反馈并移除动画
-                setTimeout(() => {
-                    feedbackElement.classList.add('hidden');
-                    document.getElementById('boss-answer-large').classList.remove('border-red-500', 'wrong-animation');
-                    document.getElementById('boss-answer-small').classList.remove('border-red-500', 'wrong-animation');
-                }, 1000);
-            }
-            
-            // 更新显示
-            feedbackElement.classList.remove('hidden');
-            document.getElementById('current-score-display').textContent = currentScore;
-            updateProgressDisplay();
-        }
-
-        // 结束游戏，显示结果
-        function endGame() {
-            // 清除计时器
-            if (timer) {
-                clearInterval(timer);
-                timer = null;
-            }
-            
-            // 保存分数记录
-            scoreRecords[currentMode][currentUnit] += currentScore;
-            saveScoreRecords();
-            
-            // 计算正确率
-            let accuracy;
-            if (currentMode === 'matching') {
-                accuracy = Math.round((matchedPairs / 6) * 100);
-            } else if (currentMode === 'boss') {
-                accuracy = Math.round((correctAnswers / totalBosses) * 100);
-            } else {
-                accuracy = Math.round((correctAnswers / totalQuestions) * 100);
-            }
-            
-            // 更新结果界面
-            document.getElementById('round-score').textContent = currentScore;
-            document.getElementById('accuracy').textContent = `${accuracy}%`;
-            
-            // 根据结果设置不同的标题和图标
-            let resultTitle, resultMessage, resultIcon;
-            
-            if (accuracy === 100) {
-                resultTitle = "完美！";
-                resultMessage = "你是单位换算大师！";
-                resultIcon = '<i class="fa fa-trophy text-yellow-500 correct-animation"></i>';
-            } else if (accuracy >= 70) {
-                resultTitle = "太棒了！";
-                resultMessage = "你的单位换算技能非常出色！";
-                resultIcon = '<i class="fa fa-star text-yellow-500 correct-animation"></i>';
-            } else if (accuracy >= 50) {
-                resultTitle = "做得好！";
-                resultMessage = "继续练习，你会更棒的！";
-                resultIcon = '<i class="fa fa-check-circle text-green-500 correct-animation"></i>';
-            } else {
-                resultTitle = "继续努力！";
-                resultMessage = "多练习几次，你一定能掌握单位换算！";
-                resultIcon = '<i class="fa fa-arrow-circle-up text-blue-500"></i>';
-            }
-            
-            document.getElementById('result-title').textContent = resultTitle;
-            document.getElementById('result-message').textContent = resultMessage;
-            document.getElementById('result-icon').innerHTML = resultIcon;
-            
-            // 显示结果界面，隐藏游戏界面
-            document.getElementById('game-screen').classList.add('hidden');
-            document.getElementById('result-screen').classList.remove('hidden');
-        }
-
-        // 显示分数记录界面
-        function showScoresScreen() {
-            updateScoreRecordsDisplay();
-            document.getElementById('start-screen').classList.add('hidden');
-            document.getElementById('scores-screen').classList.remove('hidden');
-        }
-
-        // 从分数记录界面返回
-        function backFromScores() {
-            document.getElementById('scores-screen').classList.add('hidden');
-            document.getElementById('start-screen').classList.remove('hidden');
-        }
-
-        // 更新分数记录显示
-        function updateScoreRecordsDisplay() {
-            // 更新各模式各单位的分数
-            for (const mode in scoreRecords) {
-                for (const unit in scoreRecords[mode]) {
-                    document.getElementById(`${mode}-${unit}-score`).textContent = scoreRecords[mode][unit];
-                }
-                
-                // 计算各模式总分
-                const total = Object.values(scoreRecords[mode]).reduce((sum, score) => sum + score, 0);
-                document.getElementById(`${mode}-total-score`).textContent = total;
-            }
-        }
-
-        // 保存分数记录到本地存储
-        function saveScoreRecords() {
-            localStorage.setItem('unitConversionScores', JSON.stringify(scoreRecords));
-            updateScoreRecordsDisplay();
-        }
-
-        // 重置所有分数记录
-        function resetAllScores() {
-            if (confirm('确定要重置所有分数记录吗？')) {
-                scoreRecords = {
-                    practice: { length: 0, mass: 0, volume: 0 },
-                    challenge: { length: 0, mass: 0, volume: 0 },
-                    matching: { length: 0, mass: 0, volume: 0 },
-                    boss: { length: 0, mass: 0, volume: 0 }
+                currentQuestion = {
+                    type: 'conversion-m-cm',
+                    correctAnswer: { cm: correctCm }
                 };
-                saveScoreRecords();
+            } else { // 厘米到米和厘米
+                const totalCm = getRandomInt(100, 1000); // 1米到10米之间
+                const { m, cm } = cmToMAndCm(totalCm);
+                questionText.textContent = `${totalCm}厘米 = `;
+                answerInputsDiv.innerHTML = `
+                    <input type="number" id="answer1" placeholder="" class="flex-grow"> <span>米</span>
+                    <input type="number" id="answer2" placeholder="" class="flex-grow"> <span>厘米</span>
+                `;
+                currentQuestion = {
+                    type: 'conversion-cm-m-cm',
+                    correctAnswer: { m: m, cm: cm }
+                };
             }
         }
 
-        // 返回主界面
-        function backToMain() {
-            document.getElementById('result-screen').classList.add('hidden');
-            document.getElementById('start-screen').classList.remove('hidden');
-            currentMode = null;
-            // 重置所有模式的高亮状态
-            document.querySelectorAll('#start-screen .flex-1').forEach(el => {
-                el.classList.remove('ring-4', 'ring-offset-2');
-            });
+        /**
+         * 生成长度加法问题
+         */
+        function generateAdditionQuestion() {
+            const numTerms = getRandomInt(2, 3); // 2或3个加数
+            let totalM = 0;
+            let totalCm = 0;
+            let questionParts = [];
+
+            for (let i = 0; i < numTerms; i++) {
+                const m = getRandomInt(0, 5);
+                const cm = getRandomInt(0, 99);
+                totalM += m;
+                totalCm += cm;
+                questionParts.push(`${m}米${cm}厘米`);
+            }
+
+            const { m: finalM, cm: finalCm } = cmToMAndCm(totalCm);
+            totalM += finalM;
+
+            questionText.textContent = questionParts.join(' + ') + ' = ';
+            answerInputsDiv.innerHTML = `
+                <input type="number" id="answer1" placeholder="" class="flex-grow"> <span>米</span>
+                <input type="number" id="answer2" placeholder="" class="flex-grow"> <span>厘米</span>
+            `;
+            currentQuestion = {
+                type: 'addition',
+                correctAnswer: { m: totalM, cm: finalCm }
+            };
         }
 
-        // 再玩一次
-        function playAgain() {
-            document.getElementById('result-screen').classList.add('hidden');
+        /**
+         * 生成长度减法问题
+         */
+        function generateSubtractionQuestion() {
+            let m1, cm1, m2, cm2;
+            let totalCm1, totalCm2;
+
+            // 确保第一个数大于第二个数
+            do {
+                m1 = getRandomInt(3, 10);
+                cm1 = getRandomInt(0, 99);
+                m2 = getRandomInt(1, m1); // m2不能大于m1
+                cm2 = getRandomInt(0, 99);
+
+                totalCm1 = mToCm(m1) + cm1;
+                totalCm2 = mToCm(m2) + cm2;
+            } while (totalCm1 <= totalCm2); // 确保被减数大于减数
+
+            const differenceCm = totalCm1 - totalCm2;
+            const { m: finalM, cm: finalCm } = cmToMAndCm(differenceCm);
+
+            questionText.textContent = `${m1}米${cm1}厘米 - ${m2}米${cm2}厘米 = `;
+            answerInputsDiv.innerHTML = `
+                <input type="number" id="answer1" placeholder="" class="flex-grow"> <span>米</span>
+                <input type="number" id="answer2" placeholder="" class="flex-grow"> <span>厘米</span>
+            `;
+            currentQuestion = {
+                type: 'subtraction',
+                correctAnswer: { m: finalM, cm: finalCm }
+            };
+        }
+
+        /**
+         * 检查用户答案
+         * @param {boolean} [timedOut=false] - 是否因为超时而调用
+         */
+        function checkAnswer(timedOut = false) {
+            stopTimer(); // Stop the timer as soon as answer is checked or timed out
+
+            feedbackMessage.textContent = '';
+            feedbackMessage.classList.remove('feedback-correct', 'feedback-incorrect', 'animate-feedback');
+
+            let isCorrect = false;
+            let userAnswerM, userAnswerCm;
+
+            if (currentQuestion.type === 'conversion-m-cm') {
+                userAnswerCm = parseInt(document.getElementById('answer1').value);
+                if (!isNaN(userAnswerCm) && userAnswerCm === currentQuestion.correctAnswer.cm) {
+                    isCorrect = true;
+                }
+            } else if (currentQuestion.type === 'conversion-cm-m-cm' || currentQuestion.type === 'addition' || currentQuestion.type === 'subtraction') {
+                userAnswerM = parseInt(document.getElementById('answer1').value);
+                userAnswerCm = parseInt(document.getElementById('answer2').value);
+
+                if (!isNaN(userAnswerM) && !isNaN(userAnswerCm) &&
+                    userAnswerM === currentQuestion.correctAnswer.m &&
+                    userAnswerCm === currentQuestion.correctAnswer.cm) {
+                    isCorrect = true;
+                }
+            }
+
+            if (timedOut) {
+                feedbackMessage.textContent = `时间到！`;
+                feedbackMessage.classList.add('feedback-incorrect', 'animate-feedback');
+                incorrectSound.triggerAttackRelease('8n');
+            } else if (isCorrect) {
+                feedbackMessage.textContent = '正确！🎉';
+                feedbackMessage.classList.add('feedback-correct', 'animate-feedback');
+                score += 10; // Add 10 points for correct answer
+                correctSound.triggerAttackRelease('C5', '8n');
+            } else {
+                let correctDisplay = '';
+                if (currentQuestion.type === 'conversion-m-cm') {
+                    correctDisplay = `${currentQuestion.correctAnswer.cm}厘米`;
+                } else {
+                    correctDisplay = `${currentQuestion.correctAnswer.m}米 ${currentQuestion.correctAnswer.cm}厘米`;
+                }
+                feedbackMessage.textContent = `错误！正确答案是 ${correctDisplay}。`;
+                feedbackMessage.classList.add('feedback-incorrect', 'animate-feedback');
+                incorrectSound.triggerAttackRelease('8n');
+            }
+
+            scoreDisplay.textContent = score;
+            checkBtn.style.display = 'none';
+            nextBtn.style.display = 'block';
+        }
+
+        /**
+         * 开始计时器
+         */
+        function startTimer() {
+            timeLeft = timePerQuestion;
+            timerBar.style.width = '100%';
+            timerBar.style.backgroundColor = '#f59e0b'; // Amber
+
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                const percentage = (timeLeft / timePerQuestion) * 100;
+                timerBar.style.width = `${percentage}%`;
+
+                if (timeLeft <= 5 && timeLeft > 0) { // Flash red when time is low
+                    timerBar.style.backgroundColor = '#ef4444'; // Red
+                    timerTickSound.triggerAttackRelease('C4', '16n'); // Play a tick sound
+                } else if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    checkAnswer(true); // Mark as incorrect due to timeout
+                }
+            }, 1000);
+        }
+
+        /**
+         * 停止计时器
+         */
+        function stopTimer() {
+            clearInterval(timerInterval);
+        }
+
+        /**
+         * 生成新的问题
+         */
+        function newQuestion() {
+            questionsAttempted++;
+            if (questionsAttempted > totalQuestions) {
+                gameOver();
+                return;
+            }
+
+            feedbackMessage.textContent = '';
+            feedbackMessage.classList.remove('feedback-correct', 'feedback-incorrect', 'animate-feedback');
+            checkBtn.style.display = 'block';
+            nextBtn.style.display = 'none';
+            answerInputsDiv.innerHTML = ''; // Clear previous inputs
+
+            questionsAttemptedDisplay.textContent = questionsAttempted;
+
+            // Randomly select question type
+            questionType = getRandomInt(0, 2); // 0: Conversion, 1: Addition, 2: Subtraction
+
+            if (questionType === 0) {
+                generateConversionQuestion();
+            } else if (questionType === 1) {
+                generateAdditionQuestion();
+            } else {
+                generateSubtractionQuestion();
+            }
+
+            // Start timer for the new question
+            startTimer();
+
+            // Focus on the first input field if available
+            const firstInput = document.getElementById('answer1');
+            if (firstInput) {
+                firstInput.focus();
+            }
+        }
+
+        /**
+         * 开始游戏
+         */
+        function startGame() {
+            startScreen.classList.remove('active');
+            gameScreen.classList.add('active');
+            score = 0;
+            questionsAttempted = 0;
+            scoreDisplay.textContent = score;
+            totalQuestionsDisplay.textContent = totalQuestions;
+            newQuestion();
+        }
+
+        /**
+         * 游戏结束
+         */
+        function gameOver() {
+            stopTimer(); // Ensure timer stops on game over
+            gameScreen.classList.remove('active');
+            gameOverScreen.classList.add('active');
+            finalScoreDisplay.textContent = score;
+        }
+
+        /**
+         * 重置游戏
+         */
+        function resetGame() {
+            gameOverScreen.classList.remove('active');
             startGame();
         }
 
-        // 返回游戏选择界面
-        function goBack() {
-            // 清除计时器
-            if (timer) {
-                clearInterval(timer);
-                timer = null;
-            }
-            
-            document.getElementById('game-screen').classList.add('hidden');
-            document.getElementById('start-screen').classList.remove('hidden');
-        }
+        // Event Listeners
+        document.getElementById('start-game-btn').addEventListener('click', startGame);
+        checkBtn.addEventListener('click', () => checkAnswer(false)); // Pass false, not timed out
+        nextBtn.addEventListener('click', newQuestion);
+        document.getElementById('restart-game-btn').addEventListener('click', resetGame);
+
+        // Initial game setup: Ensure only start screen is active initially
+        document.addEventListener('DOMContentLoaded', () => {
+            startScreen.classList.add('active');
+            gameScreen.classList.remove('active');
+            gameOverScreen.classList.remove('active');
+        });
     </script>
 </body>
 </html>
